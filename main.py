@@ -26,6 +26,11 @@ class HospitalResponse(BaseModel):
     class Config:
         from_attributes = True
 
+@app.get("/")
+async def health_check():
+    """Endpoint di health check per Render."""
+    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+
 @app.on_event("startup")
 async def startup_event():
     await init_db()

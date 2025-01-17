@@ -3,10 +3,11 @@ services:
     name: spitalert-backend
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: gunicorn main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT --workers 4 --timeout 120
+    healthCheckPath: /
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.0
+        value: 3.11.0
       - key: DATABASE_URL
         fromDatabase:
           name: spitalert-db
@@ -17,6 +18,7 @@ services:
         value: 900
       - key: DEBUG
         value: false
+    autoDeploy: true
 
 databases:
   - name: spitalert-db
