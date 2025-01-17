@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: spitalert-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: spitalert-db
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
+      - key: SCRAPING_INTERVAL
+        value: 900
+      - key: DEBUG
+        value: false
+
+databases:
+  - name: spitalert-db
+    databaseName: spitalert
+    plan: free 
