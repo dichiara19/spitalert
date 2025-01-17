@@ -3,7 +3,7 @@ services:
     name: spitalert-backend
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT --workers 4 --timeout 120
+    startCommand: gunicorn main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT --workers 4 --timeout 120 --log-level debug
     healthCheckPath: /
     envVars:
       - key: PYTHON_VERSION
@@ -15,12 +15,15 @@ services:
       - key: ENVIRONMENT
         value: production
       - key: SCRAPING_INTERVAL
-        value: 900
+        value: "900"
       - key: DEBUG
-        value: false
+        value: "false"
+      - key: PYTHONUNBUFFERED
+        value: "true"
     autoDeploy: true
 
 databases:
   - name: spitalert-db
     databaseName: spitalert
-    plan: free 
+    plan: free
+    ipAllowList: []  # Consenti tutte le connessioni 

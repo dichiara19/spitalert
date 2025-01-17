@@ -4,12 +4,34 @@ from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+import logging
 
+# Configurazione logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Carica variabili d'ambiente
 load_dotenv()
 
 # Configurazione del database
 DATABASE_URL = os.getenv("DATABASE_URL")
-engine = create_async_engine(DATABASE_URL)
+if not DATABASE_URL:
+    logger.error("DATABASE_URL non trovato nelle variabili d'ambiente!")
+    DATABASE_URL = "sqlite+aiosqlite:///./test.db"  # Database di fallback per development
+    logger.info(f"Usando database di fallback: {DATABASE_URL}")
+
+try:
+    engine = create_async_engine(
+        DATABASE_URL,
+        echo=os.getenv("DEBUG", "False").lower() == "true",
+        pool_size=5,
+        max_overflow=10
+    )
+    logger.info("Connessione al database configurata con successo")
+except Exception as e:
+    logger.error(f"Errore nella creazione dell'engine del database: {str(e)}")
+    raise
+
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 class Base(DeclarativeBase):
@@ -44,5 +66,10 @@ async def get_db():
             await session.close()
 
 async def init_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all) 
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database inizializzato con successo")
+    except Exception as e:
+        logger.error(f"Errore nell'inizializzazione del database: {str(e)}")
+        raise 
