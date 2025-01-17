@@ -1,4 +1,4 @@
-# SpiTAlert Backend
+# SpitAlert Backend
 
 Sistema di monitoraggio in tempo reale dei tempi di attesa nei pronto soccorso.
 
