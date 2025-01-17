@@ -21,12 +21,20 @@ if not DATABASE_URL:
     logger.info(f"Usando database di fallback: {DATABASE_URL}")
 
 try:
-    engine = create_async_engine(
-        DATABASE_URL,
-        echo=os.getenv("DEBUG", "False").lower() == "true",
-        pool_size=5,
-        max_overflow=10
-    )
+    # Configura l'engine in base al tipo di database
+    if DATABASE_URL.startswith('sqlite'):
+        engine = create_async_engine(
+            DATABASE_URL,
+            echo=os.getenv("DEBUG", "False").lower() == "true"
+        )
+    else:
+        # PostgreSQL supporta il connection pooling
+        engine = create_async_engine(
+            DATABASE_URL,
+            echo=os.getenv("DEBUG", "False").lower() == "true",
+            pool_size=5,
+            max_overflow=10
+        )
     logger.info("Connessione al database configurata con successo")
 except Exception as e:
     logger.error(f"Errore nella creazione dell'engine del database: {str(e)}")

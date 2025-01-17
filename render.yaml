@@ -12,6 +12,8 @@ services:
         fromDatabase:
           name: spitalert-db
           property: connectionString
+          replaceWith: postgresql+asyncpg
+          replace: postgres
       - key: ENVIRONMENT
         value: production
       - key: SCRAPING_INTERVAL
