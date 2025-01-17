@@ -6,6 +6,16 @@ from scheduler import setup_scheduler
 from typing import List
 from pydantic import BaseModel
 from datetime import datetime
+import logging
+import sys
+
+# Configurazione logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SpiTAlert API")
 
@@ -26,15 +36,36 @@ class HospitalResponse(BaseModel):
     class Config:
         from_attributes = True
 
-@app.get("/")
-async def health_check():
-    """Endpoint di health check per Render."""
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
-
 @app.on_event("startup")
 async def startup_event():
-    await init_db()
-    setup_scheduler()
+    """Inizializza il database e lo scheduler all'avvio dell'applicazione."""
+    try:
+        logger.info("Inizializzazione dell'applicazione...")
+        
+        # Inizializza il database
+        logger.info("Inizializzazione del database...")
+        db_initialized = await init_db()
+        if not db_initialized:
+            logger.error("Errore nell'inizializzazione del database")
+            sys.exit(1)
+        
+        # Avvia lo scheduler
+        logger.info("Avvio dello scheduler...")
+        setup_scheduler()
+        
+        logger.info("Inizializzazione completata con successo")
+    except Exception as e:
+        logger.error(f"Errore durante l'inizializzazione: {str(e)}")
+        sys.exit(1)
+
+@app.get("/")
+async def health_check():
+    """Endpoint di health check."""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "version": "1.0.0"
+    }
 
 @app.get("/hospitals/", response_model=List[HospitalResponse])
 async def get_hospitals(db: AsyncSession = Depends(get_db)):
