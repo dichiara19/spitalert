@@ -1,10 +1,16 @@
 from typing import List, Type
 from .base_scraper import BaseScraper
 from .villa_sofia_cervello import VillaSofiaCervelloScraper
+from .civico import CivicoScraper
+from .asp_palermo import AspPalermoScraper
+from .policlinico import PoliclinicoScraper
 
 # Lista di tutti gli scraper disponibili
 AVAILABLE_SCRAPERS: List[Type[BaseScraper]] = [
-    VillaSofiaCervelloScraper
+    VillaSofiaCervelloScraper,
+    CivicoScraper,
+    AspPalermoScraper,
+    PoliclinicoScraper
 ]
 
 def get_all_scrapers() -> List[BaseScraper]:

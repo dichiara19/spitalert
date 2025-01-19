@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database import get_db, init_db, Hospital
@@ -8,6 +9,7 @@ from pydantic import BaseModel
 from datetime import datetime
 import logging
 import sys
+import os
 
 # Configurazione logging
 logging.basicConfig(
@@ -17,7 +19,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="SpiTAlert API")
+app = FastAPI(
+    title="SpitAlert API",
+    description="API per il monitoraggio del sovraffollamento nei pronto soccorso",
+    version="1.0.0"
+)
+
+# Configurazione CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In produzione, specificare domini consentiti
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class HospitalResponse(BaseModel):
     id: int
@@ -36,26 +51,31 @@ class HospitalResponse(BaseModel):
     class Config:
         from_attributes = True
 
-@app.on_event("startup")
-async def startup_event():
-    """Inizializza il database e lo scheduler all'avvio dell'applicazione."""
+async def initialize_application():
+    """Inizializza l'applicazione in modo sicuro."""
     try:
-        logger.info("Inizializzazione dell'applicazione...")
+        logger.info("Verifica configurazione ambiente...")
+        env = os.getenv("ENVIRONMENT", "development")
+        logger.info(f"Ambiente: {env}")
         
-        # Inizializza il database
         logger.info("Inizializzazione del database...")
-        db_initialized = await init_db()
-        if not db_initialized:
-            logger.error("Errore nell'inizializzazione del database")
-            sys.exit(1)
+        if not await init_db():
+            raise RuntimeError("Inizializzazione del database fallita")
         
-        # Avvia lo scheduler
         logger.info("Avvio dello scheduler...")
         setup_scheduler()
         
         logger.info("Inizializzazione completata con successo")
+        return True
     except Exception as e:
-        logger.error(f"Errore durante l'inizializzazione: {str(e)}")
+        logger.error(f"Errore fatale durante l'inizializzazione: {str(e)}")
+        return False
+
+@app.on_event("startup")
+async def startup_event():
+    """Gestisce l'avvio dell'applicazione."""
+    if not await initialize_application():
+        logger.critical("Impossibile avviare l'applicazione. Arresto in corso...")
         sys.exit(1)
 
 @app.get("/")
@@ -64,7 +84,8 @@ async def health_check():
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "environment": os.getenv("ENVIRONMENT", "development")
     }
 
 @app.get("/hospitals/", response_model=List[HospitalResponse])

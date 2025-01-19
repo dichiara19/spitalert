@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, inspect
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, text, inspect
 from datetime import datetime
 import os
 from dotenv import load_dotenv
@@ -22,29 +22,23 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    logger.error("DATABASE_URL non trovato nelle variabili d'ambiente!")
+    logger.warning("DATABASE_URL non trovato nelle variabili d'ambiente!")
     if os.getenv("ENVIRONMENT") == "production":
         raise ValueError("DATABASE_URL è richiesto in produzione!")
-    DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+    DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/spitalert"
     logger.info(f"Usando database di fallback: {DATABASE_URL}")
 
 # Configura l'engine in base al tipo di database
-if DATABASE_URL.startswith('sqlite'):
-    engine_config = {
-        "echo": os.getenv("DEBUG", "False").lower() == "true"
-    }
-else:
-    # Sostituisci postgres:// con postgresql:// se necessario
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
-    
-    engine_config = {
-        "echo": os.getenv("DEBUG", "False").lower() == "true",
-        "pool_size": 5,
-        "max_overflow": 10,
-        "pool_timeout": 30,
-        "pool_recycle": 1800
-    }
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+
+engine_config = {
+    "echo": os.getenv("DEBUG", "False").lower() == "true",
+    "pool_size": 5,
+    "max_overflow": 10,
+    "pool_timeout": 30,
+    "pool_recycle": 1800
+}
 
 try:
     engine = create_async_engine(DATABASE_URL, **engine_config)
@@ -63,21 +57,18 @@ class Hospital(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
-    department = Column(String)  # es. "Pronto Soccorso Adulti", "Pronto Soccorso Pediatrico"
+    department = Column(String)
     total_patients = Column(Integer, default=0)
     waiting_patients = Column(Integer, default=0)
-    
-    # Codici colore
     red_code = Column(Integer, default=0)
     orange_code = Column(Integer, default=0)
     azure_code = Column(Integer, default=0)
     green_code = Column(Integer, default=0)
     white_code = Column(Integer, default=0)
-    
-    overcrowding_index = Column(Float)  # Indice di sovraffollamento in percentuale
+    overcrowding_index = Column(Float)
     last_updated = Column(DateTime, default=datetime.utcnow)
     is_active = Column(Boolean, default=True)
-    url = Column(String)  # URL del pronto soccorso da monitorare
+    url = Column(String)
 
 async def get_db():
     async with AsyncSessionLocal() as session:
@@ -86,14 +77,27 @@ async def get_db():
         finally:
             await session.close()
 
+async def check_table_exists(conn, table_name):
+    """Verifica l'esistenza di una tabella in modo database-agnostico."""
+    try:
+        # Utilizzo dell'Inspector di SQLAlchemy per un controllo database-agnostico
+        def _check():
+            inspector = inspect(conn)
+            return table_name in inspector.get_table_names()
+        
+        exists = await conn.run_sync(_check)
+        return exists
+    except Exception as e:
+        logger.error(f"Errore nel controllo della tabella {table_name}: {str(e)}")
+        return False
+
 async def init_db():
     try:
         async with engine.begin() as conn:
             # Verifica se le tabelle esistono già
-            inspector = inspect(engine)
-            tables = await conn.run_sync(inspector.get_table_names)
+            table_exists = await check_table_exists(conn, "hospitals")
             
-            if "hospitals" not in tables:
+            if not table_exists:
                 logger.info("Creazione delle tabelle del database...")
                 await conn.run_sync(Base.metadata.create_all)
                 logger.info("Tabelle create con successo")

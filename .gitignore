@@ -24,19 +24,27 @@ wheels/
 venv/
 ENV/
 env/
+.venv/
+.env/
+
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+.cursorrules
 
 # Environment
 .env
+.env.example
 
 # Logs
 *.log
 
 # Database
 *.sqlite3
-*.db 
+*.db
+
+# Frontend
+frontend/
