@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, text, inspect
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, text, inspect, UniqueConstraint, select
 from datetime import datetime
 import os
 from dotenv import load_dotenv
@@ -75,6 +75,10 @@ class Hospital(Base):
     is_active = Column(Boolean, default=True)
     url = Column(String)
 
+    __table_args__ = (
+        UniqueConstraint('name', 'department', name='uix_name_department'),
+    )
+
 async def get_db():
     async with AsyncSessionLocal() as session:
         try:
@@ -107,7 +111,30 @@ async def init_db():
                 await conn.run_sync(Base.metadata.create_all)
                 logger.info("Tabelle create con successo")
             else:
-                logger.info("Le tabelle esistono già, skip creazione")
+                logger.info("Le tabelle esistono già, procedo con la pulizia dei duplicati...")
+                # Rimuovi i duplicati mantenendo solo la riga più recente per ogni combinazione name-department
+                query = """
+                DELETE FROM hospitals a USING (
+                    SELECT name, department, MAX(last_updated) as max_date
+                    FROM hospitals 
+                    GROUP BY name, department
+                ) b 
+                WHERE a.name = b.name 
+                AND a.department = b.department 
+                AND a.last_updated < b.max_date;
+                """
+                await conn.execute(text(query))
+                
+                # Aggiungi il vincolo UNIQUE se non esiste
+                try:
+                    await conn.execute(text(
+                        "ALTER TABLE hospitals ADD CONSTRAINT uix_name_department UNIQUE (name, department);"
+                    ))
+                    logger.info("Vincolo unique aggiunto con successo")
+                except Exception as e:
+                    if "already exists" not in str(e):
+                        raise
+                    logger.info("Il vincolo unique esiste già")
         
         logger.info("Inizializzazione database completata")
         return True
@@ -115,4 +142,40 @@ async def init_db():
         logger.error(f"Errore nell'inizializzazione del database: {str(e)}")
         if os.getenv("ENVIRONMENT") == "production":
             raise
-        return False 
+        return False
+
+async def get_or_create_hospital(session: AsyncSession, name: str, department: str, **kwargs) -> Hospital:
+    """
+    Recupera un ospedale esistente o ne crea uno nuovo se non esiste.
+    Gestisce in modo sicuro i duplicati.
+    """
+    try:
+        # Cerca l'ospedale esistente
+        query = select(Hospital).filter(
+            Hospital.name == name,
+            Hospital.department == department
+        )
+        result = await session.execute(query)
+        hospital = result.scalar_one_or_none()
+        
+        if hospital:
+            # Aggiorna i campi esistenti
+            for key, value in kwargs.items():
+                if hasattr(hospital, key):
+                    setattr(hospital, key, value)
+        else:
+            # Crea un nuovo ospedale
+            hospital = Hospital(
+                name=name,
+                department=department,
+                **kwargs
+            )
+            session.add(hospital)
+        
+        await session.commit()
+        return hospital
+    
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Errore nell'operazione su ospedale {name} - {department}: {str(e)}")
+        raise 
