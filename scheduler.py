@@ -8,7 +8,7 @@ import logging
 import sys
 from datetime import datetime
 
-# Configurazione logging
+# logging configuration
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -37,7 +37,6 @@ def get_interval_seconds():
     try:
         interval = os.getenv("SCRAPING_INTERVAL", "3600").strip()
         
-        # Verifica che il valore sia un numero intero valido
         if not interval.isdigit():
             raise ValueError(f"L'intervallo deve essere un numero intero positivo, ricevuto: {interval}")
             
@@ -49,7 +48,7 @@ def get_interval_seconds():
         
     except (ValueError, TypeError) as e:
         logger.error(f"Errore nel parsing dell'intervallo: {str(e)}")
-        return 3600  # Valore di default: 1 ora
+        return 3600  # default value: 1 hour
 
 def setup_scheduler():
     """Configura e avvia lo scheduler."""
@@ -62,7 +61,7 @@ def setup_scheduler():
             id='hospital_scraping',
             name='Scraping periodico ospedali',
             replace_existing=True,
-            next_run_time=datetime.now()  # Esegui immediatamente
+            next_run_time=datetime.now()  # run immediately
         )
         
         logger.info(f"Scheduler configurato con intervallo di {interval_seconds} secondi")

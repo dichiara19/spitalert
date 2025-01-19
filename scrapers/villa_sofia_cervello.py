@@ -31,7 +31,7 @@ class VillaSofiaCervelloScraper(BaseScraper):
             "url": self.url
         }
         
-        # Estrai i codici colore
+        # extract the color codes
         codes = section.find_all("div", class_="olo-container-codice")
         for code in codes:
             color = ""
@@ -44,7 +44,7 @@ class VillaSofiaCervelloScraper(BaseScraper):
             if color:
                 data[f"{color}_code"] = int(code.find("div", class_="olo-number-codice").text.strip())
         
-        # Estrai l'indice di sovraffollamento
+        # extract the overcrowding index
         overcrowding = section.find("div", class_="olo-row-indice-sovraffollamento")
         if overcrowding:
             data["overcrowding_index"] = self.extract_percentage(overcrowding.text)
@@ -56,12 +56,11 @@ class VillaSofiaCervelloScraper(BaseScraper):
         soup = BeautifulSoup(html_content, 'html.parser')
         hospitals_data = []
         
-        # Trova la data di aggiornamento
+        # find the update date
         update_div = soup.find("div", class_="olo-row-dati-aggiornati-al")
-        last_updated = datetime.utcnow()  # Default a now
+        last_updated = datetime.utcnow()  # default to now
         if update_div:
             try:
-                # Esempio: "Situazione aggiornata al 17 Gennaio 2025 18:04"
                 update_text = update_div.text.strip()
                 date_str = re.search(r'(\d{1,2})\s+(\w+)\s+(\d{4})\s+(\d{2}):(\d{2})', update_text)
                 if date_str:
@@ -78,7 +77,7 @@ class VillaSofiaCervelloScraper(BaseScraper):
             except Exception as e:
                 print(f"Errore nel parsing della data: {str(e)}")
         
-        # Trova tutte le sezioni degli ospedali
+        # find all the hospital sections
         hospital_sections = soup.find_all("div", class_="olo-container-single-hospital")
         
         for section in hospital_sections:

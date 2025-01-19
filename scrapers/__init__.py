@@ -5,7 +5,7 @@ from .civico import CivicoScraper
 from .asp_palermo import AspPalermoScraper
 from .policlinico import PoliclinicoScraper
 
-# Lista di tutti gli scraper disponibili
+# list of all available scrapers
 AVAILABLE_SCRAPERS: List[Type[BaseScraper]] = [
     VillaSofiaCervelloScraper,
     CivicoScraper,

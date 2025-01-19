@@ -29,12 +29,12 @@ class PoliclinicoScraper(BaseScraper):
         """Analizza il contenuto HTML e estrae i dati del pronto soccorso."""
         soup = BeautifulSoup(html_content, 'html.parser')
         
-        # Estrai i dati principali
+        # extract the main data
         overcrowding_index = self.extract_percentage(
             soup.find('b', id='indice-sovraffollamento').text if soup.find('b', id='indice-sovraffollamento') else "0"
         )
         
-        # Estrai i pazienti in attesa per codice
+        # extract the waiting patients by code
         waiting_red = self.extract_number(
             soup.find('b', id='attesa-rosso').text if soup.find('b', id='attesa-rosso') else "0"
         )
@@ -51,7 +51,7 @@ class PoliclinicoScraper(BaseScraper):
             soup.find('b', id='attesa-bianco').text if soup.find('b', id='attesa-bianco') else "0"
         )
         
-        # Estrai i pazienti in cura per codice
+        # extract the patients in treatment by code
         treatment_red = self.extract_number(
             soup.find('b', id='carico-rosso').text if soup.find('b', id='carico-rosso') else "0"
         )
@@ -68,12 +68,12 @@ class PoliclinicoScraper(BaseScraper):
             soup.find('b', id='carico-bianco').text if soup.find('b', id='carico-bianco') else "0"
         )
         
-        # Calcola i totali
+        # calculate the totals
         total_waiting = waiting_red + waiting_yellow + waiting_azure + waiting_green + waiting_white
         total_treatment = treatment_red + treatment_yellow + treatment_azure + treatment_green + treatment_white
         total_patients = total_waiting + total_treatment
         
-        # Prepara i dati per il database
+        # prepare the data for the database
         hospital_data = {
             "name": self.name,
             "department": "Pronto Soccorso",

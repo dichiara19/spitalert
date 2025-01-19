@@ -26,10 +26,10 @@ class CivicoScraper(BaseScraper):
             "white_code": 0
         }
         
-        rows = table.find_all('tr')[1:]  # Salta l'header
+        rows = table.find_all('tr')[1:]  # skip the header
         for row in rows:
             cells = row.find_all('td')
-            if len(cells) >= 5:  # Verifica che ci siano abbastanza celle
+            if len(cells) >= 5:  # check if there are enough cells
                 code_type = cells[0].text.strip().upper()
                 total = int(cells[4].text.strip())
                 
@@ -53,7 +53,7 @@ class CivicoScraper(BaseScraper):
     
     def extract_waiting_patients(self, table) -> int:
         """Estrae il numero di pazienti in attesa dalla tabella."""
-        total_row = table.find_all('tr')[-1]  # Ultima riga (totali)
+        total_row = table.find_all('tr')[-1]  # last row (totals)
         cells = total_row.find_all('th')
         if len(cells) >= 2:
             waiting = cells[1].text.strip()
@@ -65,19 +65,18 @@ class CivicoScraper(BaseScraper):
         soup = BeautifulSoup(html_content, 'html.parser')
         hospitals_data = []
         
-        # Trova la data di aggiornamento
+        # find the update date
         update_text = soup.find(text=re.compile(r'Situazione aggiornata al'))
-        last_updated = datetime.utcnow()  # Default a now
+        last_updated = datetime.utcnow()  # default to now
         if update_text:
             try:
-                # Esempio: "Situazione aggiornata al 18/01/2025 13:19:20"
                 date_str = re.search(r'(\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}:\d{2})', update_text)
                 if date_str:
                     last_updated = datetime.strptime(date_str.group(1), '%d/%m/%Y %H:%M:%S')
             except Exception as e:
                 print(f"Errore nel parsing della data: {str(e)}")
         
-        # Trova le tabelle dei pronto soccorso
+        # find the emergency tables
         tables = soup.find_all('table', class_='gridtable')
         sections = soup.find_all(text=re.compile(r'Totale pazienti al P\.S\.'))
         
@@ -86,7 +85,7 @@ class CivicoScraper(BaseScraper):
                 department = "Pronto Soccorso Adulti" if "Civico" in section else "Pronto Soccorso Pediatrico"
                 section_text = str(section.parent)
                 
-                # Estrai i dati base
+                # extract the base data
                 data = {
                     "name": self.name,
                     "department": department,
@@ -97,11 +96,11 @@ class CivicoScraper(BaseScraper):
                     "is_active": True
                 }
                 
-                # Estrai l'indice di sovraffollamento
+                # extract the overcrowding index
                 overcrowding = re.search(r'Indice Sovraffollamento:[^%]*?(\d+)%', section_text)
                 data["overcrowding_index"] = float(overcrowding.group(1)) if overcrowding else 0.0
                 
-                # Aggiungi i conteggi dei codici
+                # add the codes counts
                 data.update(self.parse_table_data(tables[i]))
                 
                 hospitals_data.append(data)
