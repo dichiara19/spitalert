@@ -34,10 +34,15 @@ if DATABASE_URL.startswith("postgres://"):
 
 engine_config = {
     "echo": os.getenv("DEBUG", "False").lower() == "true",
-    "pool_size": 5,
-    "max_overflow": 10,
-    "pool_timeout": 30,
-    "pool_recycle": 1800
+    "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),
+    "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "10")),
+    "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
+    "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", "1800")),
+    "pool_pre_ping": True,
+    "connect_args": {
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0
+    }
 }
 
 try:
