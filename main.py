@@ -25,15 +25,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configurazione CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In produzione, specificare domini consentiti
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 class HospitalResponse(BaseModel):
     id: int
     name: str

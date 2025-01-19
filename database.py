@@ -15,10 +15,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Carica variabili d'ambiente
 load_dotenv()
 
-# Configurazione del database
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
@@ -28,7 +26,6 @@ if not DATABASE_URL:
     DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/spitalert"
     logger.info(f"Usando database di fallback: {DATABASE_URL}")
 
-# Configura l'engine in base al tipo di database
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
 
@@ -89,7 +86,7 @@ async def get_db():
 async def check_table_exists(conn, table_name):
     """Verifica l'esistenza di una tabella in modo database-agnostico."""
     try:
-        # Utilizzo dell'Inspector di SQLAlchemy per un controllo database-agnostico
+        # using inspector to check if the table exists
         def _check():
             inspector = inspect(conn)
             return table_name in inspector.get_table_names()
@@ -103,7 +100,6 @@ async def check_table_exists(conn, table_name):
 async def init_db():
     try:
         async with engine.begin() as conn:
-            # Verifica se le tabelle esistono già
             table_exists = await check_table_exists(conn, "hospitals")
             
             if not table_exists:
@@ -112,29 +108,43 @@ async def init_db():
                 logger.info("Tabelle create con successo")
             else:
                 logger.info("Le tabelle esistono già, procedo con la pulizia dei duplicati...")
-                # Rimuovi i duplicati mantenendo solo la riga più recente per ogni combinazione name-department
-                query = """
-                DELETE FROM hospitals a USING (
-                    SELECT name, department, MAX(last_updated) as max_date
-                    FROM hospitals 
-                    GROUP BY name, department
-                ) b 
-                WHERE a.name = b.name 
-                AND a.department = b.department 
-                AND a.last_updated < b.max_date;
-                """
-                await conn.execute(text(query))
                 
-                # Aggiungi il vincolo UNIQUE se non esiste
+                # remove duplicates keeping only the latest row for each name-department combination
+                cleanup_query = """
+                WITH ranked_hospitals AS (
+                    SELECT id,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY name, department
+                               ORDER BY last_updated DESC
+                           ) as rn
+                    FROM hospitals
+                )
+                DELETE FROM hospitals
+                WHERE id IN (
+                    SELECT id
+                    FROM ranked_hospitals
+                    WHERE rn > 1
+                );
+                """
+                await conn.execute(text(cleanup_query))
+                
+                # remove the unique constraint if it exists
+                try:
+                    await conn.execute(text(
+                        "ALTER TABLE hospitals DROP CONSTRAINT IF EXISTS uix_name_department;"
+                    ))
+                except Exception as e:
+                    logger.warning(f"Errore nella rimozione del vincolo: {str(e)}")
+                
+                # add the unique constraint
                 try:
                     await conn.execute(text(
                         "ALTER TABLE hospitals ADD CONSTRAINT uix_name_department UNIQUE (name, department);"
                     ))
                     logger.info("Vincolo unique aggiunto con successo")
                 except Exception as e:
-                    if "already exists" not in str(e):
-                        raise
-                    logger.info("Il vincolo unique esiste già")
+                    logger.error(f"Errore nell'aggiunta del vincolo: {str(e)}")
+                    raise
         
         logger.info("Inizializzazione database completata")
         return True
@@ -150,7 +160,25 @@ async def get_or_create_hospital(session: AsyncSession, name: str, department: s
     Gestisce in modo sicuro i duplicati.
     """
     try:
-        # Cerca l'ospedale esistente
+        # first remove duplicates keeping only the latest record
+        cleanup_query = """
+        DELETE FROM hospitals a USING (
+            SELECT id, name, department, MAX(last_updated) as max_date
+            FROM hospitals 
+            WHERE name = :name AND department = :department
+            GROUP BY id, name, department
+            ORDER BY max_date DESC
+            OFFSET 1
+        ) b 
+        WHERE a.name = b.name 
+        AND a.department = b.department;
+        """
+        await session.execute(
+            text(cleanup_query),
+            {"name": name, "department": department}
+        )
+        await session.commit()
+
         query = select(Hospital).filter(
             Hospital.name == name,
             Hospital.department == department
@@ -159,12 +187,12 @@ async def get_or_create_hospital(session: AsyncSession, name: str, department: s
         hospital = result.scalar_one_or_none()
         
         if hospital:
-            # Aggiorna i campi esistenti
+            # update the existing fields
             for key, value in kwargs.items():
                 if hasattr(hospital, key):
                     setattr(hospital, key, value)
         else:
-            # Crea un nuovo ospedale
+            # create a new hospital
             hospital = Hospital(
                 name=name,
                 department=department,
