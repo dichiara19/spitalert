@@ -114,7 +114,7 @@ class NuovoOspedaleScraper(BaseScraper):
   - P.O. "San Vincenzo" di Taormina
   - P.O. "Barone Romeo" di Patti
 - Palermo
-P.O. "Civico" di Partinico
+  - P.O. "Civico" di Partinico
   - P.O. "S. Cimino" di Termini Imerese
   - P.O. "G. F. Ingrassia"
   - A.O. Villa Sofia-Cervello

@@ -34,9 +34,18 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
     servers=[
-        {"url": "/", "description": "Local development server"},
-        {"url": "https://spitalert.onrender.com", "description": "Production server"}
+        {"url": "https://spitalert.onrender.com", "description": "Production server"},
+        {"url": "http://localhost:8000", "description": "Local development server"}
     ]
+)
+
+# Configurazione CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 class HospitalResponse(BaseModel):
