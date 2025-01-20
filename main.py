@@ -34,7 +34,8 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
     servers=[
-        {"url": "https://spitalert.onrender.com", "description": "Production server"}
+        {"url": "https://spitalert.onrender.com" if os.getenv("ENVIRONMENT") == "production" else "http://localhost:8000", 
+         "description": "API server"}
     ]
 )
 

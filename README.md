@@ -137,6 +137,12 @@ class NuovoOspedaleScraper(BaseScraper):
   - P.O. "A. Ajello" di Mazara del Vallo
   - P.O. "Paolo Borsellino" di Marsala
 
+## Contribuire al progetto
+
+### Aggiungere nuovo scraper/ospedale
+
+Stiamo cercando di aggiungere ogni ospedale siciliano esistente, se hai voglia di contribuire, puoi aggiungere un nuovo scraper o un nuovo ospedale. Consulta la discussione [qui](https://github.com/tuousername/spitalert/discussions/1) per maggiori dettagli e accedi al progetto [qui](https://github.com/tuousername/spitalert/projects/1) per monitorare lo stato degli ospedali aggiunti.
+
 ## Licenza
 
 MIT 
