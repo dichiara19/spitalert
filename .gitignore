@@ -35,6 +35,7 @@ env/
 *.swo
 .cursorrules
 cursorrules
+cursorrules/
 
 # Environment
 .env
