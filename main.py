@@ -10,6 +10,7 @@ from datetime import datetime
 import logging
 import sys
 import os
+from contextlib import asynccontextmanager
 
 # Configurazione logging
 logging.basicConfig(
@@ -19,10 +20,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Gestisce il ciclo di vita dell'applicazione."""
+    if not await initialize_application():
+        logger.critical("Impossibile avviare l'applicazione. Arresto in corso...")
+        sys.exit(1)
+    yield
+
 app = FastAPI(
     title="SpitAlert API",
     description="API per il monitoraggio del sovraffollamento nei pronto soccorso",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
+    servers=[
+        {"url": "/", "description": "Local development server"},
+        {"url": "https://spitalert.onrender.com", "description": "Production server"}
+    ]
 )
 
 class HospitalResponse(BaseModel):
@@ -61,13 +75,6 @@ async def initialize_application():
     except Exception as e:
         logger.error(f"Errore fatale durante l'inizializzazione: {str(e)}")
         return False
-
-@app.on_event("startup")
-async def startup_event():
-    """Gestisce l'avvio dell'applicazione."""
-    if not await initialize_application():
-        logger.critical("Impossibile avviare l'applicazione. Arresto in corso...")
-        sys.exit(1)
 
 @app.get("/")
 async def health_check():
