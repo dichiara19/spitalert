@@ -34,8 +34,7 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
     servers=[
-        {"url": "https://spitalert.onrender.com", "description": "Production server"},
-        {"url": "http://localhost:8000", "description": "Local development server"}
+        {"url": "https://spitalert.onrender.com", "description": "Production server"}
     ]
 )
 
