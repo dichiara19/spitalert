@@ -4,13 +4,15 @@ from .villa_sofia_cervello import VillaSofiaCervelloScraper
 from .civico import CivicoScraper
 from .asp_palermo import AspPalermoScraper
 from .policlinico import PoliclinicoScraper
+from .asp_agrigento import AspAgrigentoScraper
 
 # list of all available scrapers
 AVAILABLE_SCRAPERS: List[Type[BaseScraper]] = [
     VillaSofiaCervelloScraper,
     CivicoScraper,
     AspPalermoScraper,
-    PoliclinicoScraper
+    PoliclinicoScraper,
+    AspAgrigentoScraper
 ]
 
 def get_all_scrapers() -> List[BaseScraper]:

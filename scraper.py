@@ -36,8 +36,8 @@ async def scrape_all_hospitals(db: AsyncSession):
             logger.info(f"Avvio scraping per {scraper.name}")
             hospitals_data = await scraper.scrape()
             for hospital_data in hospitals_data:
-                await update_hospital_data(db, hospital_data)
-            all_results.extend(hospitals_data)
+                hospital = await update_hospital_data(db, hospital_data)
+                all_results.append(hospital)
             logger.info(f"Scraping completato per {scraper.name}")
         except Exception as e:
             logger.error(f"Errore con lo scraper {scraper.name}: {str(e)}")
