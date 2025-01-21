@@ -50,3 +50,6 @@ cursorrules/
 
 # Frontend
 frontend/
+
+# Test
+test_scraper.py
