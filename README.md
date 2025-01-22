@@ -23,7 +23,7 @@ Sistema di monitoraggio in tempo reale dei tempi di attesa nei pronto soccorso.
 
 1. Clona il repository:
 ```bash
-git clone https://github.com/tuousername/spitalert.git
+git clone https://github.com/dichiara19/spitalert.git
 cd spitalert
 ```
 
