@@ -1,16 +1,23 @@
 # SpitAlert Backend
 
-Sistema di monitoraggio in tempo reale dei tempi di attesa nei pronto soccorso.
+[![Website](https://img.shields.io/badge/Website-spitalert.com-blue)](https://spitalert.com)
+[![API](https://img.shields.io/badge/API-api.spitalert.com-green)](https://api.spitalert.com)
+[![Visitors](https://visitor-badge.laobi.icu/badge?page_id=dichiara19.spitalert)](https://github.com/dichiara19/spitalert)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.68+-green.svg)](https://fastapi.tiangolo.com)
 
-## Caratteristiche
+Real-time monitoring system for waiting times in Sicilian emergency rooms.
 
-- Scraping automatico dei dati dai siti web degli ospedali
-- API REST per accedere ai dati
-- Sistema modulare per aggiungere facilmente nuovi ospedali
-- Aggiornamento automatico ogni 15 minuti
-- Storico dei tempi di attesa
+## Features
 
-## Tecnologie
+- Automatic scraping of data from hospital websites
+- REST API to access data
+- Modular system to easily add new hospitals
+- Automatic update every 15 minutes
+- Wait time history
+
+## Technologies
 
 - Python 3.9+
 - FastAPI
@@ -19,97 +26,97 @@ Sistema di monitoraggio in tempo reale dei tempi di attesa nei pronto soccorso.
 - BeautifulSoup4
 - APScheduler
 
-## Installazione
+## Installation
 
-1. Clona il repository:
+1. Clone the repository:
 ```bash
 git clone https://github.com/dichiara19/spitalert.git
 cd spitalert
 ```
 
-2. Crea un ambiente virtuale e installare le dipendenze:
+2. Create a virtual environment and install dependencies:
 ```bash
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# oppure
-.\venv\Scripts\activate  # Windows
+source venv/bin/activate # Linux/Mac
+# or
+.\venv\Scripts\activate # Windows
 pip install -r requirements.txt
 ```
 
-3. Configura le variabili d'ambiente:
+3. Configure environment variables:
 ```bash
 cp .env.example .env
-# Modifica .env con i tuoi parametri
+# Edit .env with your parameters
 ```
 
-4. Avvia l'applicazione:
+4. Start the application:
 ```bash
 uvicorn main:app --reload
 ```
 
-L'API sarà disponibile su `http://localhost:8000`
-La documentazione Swagger su `http://localhost:8000/docs`
+API will be available at `http://localhost:8000`
+Swagger documentation at `http://localhost:8000/docs`
 
-## Struttura del Progetto
+## Project Structure
 
 ```
 backend/
-│── main.py               # Punto di ingresso API
-│── scraper.py           # Gestione scraping
-│── database.py          # Configurazione database
-│── scheduler.py         # Task automatici
-│── requirements.txt     # Dipendenze
-│── .env                # Configurazione
-└── scrapers/           # Moduli scraper
-    ├── __init__.py
-    ├── base_scraper.py
-    └── villa_sofia_cervello.py
+│── main.py # API entry point
+│── scraper.py # Scraping management
+│── database.py # Database configuration
+│── scheduler.py # Automatic tasks
+│── requirements.txt # Dependencies
+│── .env # Configuration
+└── scrapers/ # Scraper modules
+├── __init__.py
+├── base_scraper.py
+└── villa_sofia_cervello.py
 ```
 
-## Aggiungere un Nuovo Scraper
+## Adding a New Scraper
 
-1. Crea un nuovo file in `scrapers/` (es: `nuovo_ospedale.py`)
-2. Crea una classe che eredita da `BaseScraper`
-3. Implementa il metodo `parse()`
-4. Aggiungi la classe a `AVAILABLE_SCRAPERS` in `scrapers/__init__.py`
+1. Create a new file in `scrapers/` (eg: `nuovo_ospedale.py`)
+2. Create a class that inherits from `BaseScraper`
+3. Implement the `parse()` method
+4. Add the class to `AVAILABLE_SCRAPERS` in `scrapers/__init__.py`
 
-Esempio:
+Example:
 ```python
 from .base_scraper import BaseScraper
 
 class NuovoOspedaleScraper(BaseScraper):
-    def __init__(self):
-        super().__init__(
-            url="URL_OSPEDALE",
-            name="Nome Ospedale"
-        )
-    
-    async def parse(self, html_content: str):
-        # Implementa la logica di parsing
-        pass
+def __init__(self):
+super().__init__(
+url="URL_HOSPITAL",
+name="Nome Ospedale"
+)
+
+async def parse(self, html_content: str):
+# Implement parsing logic
+pass
 ```
 
-## Lista degli ospedali
+## List of hospitals
 
-Puoi trovare la lista degli ospedali aggiunti [qui](https://github.com/dichiara19/spitalert/projects/1)
+You can find the list of added hospitals [here](https://github.com/dichiara19/spitalert/projects/1)
 
-## Contribuire al progetto
+## Contribute to the project
 
-### Guida Dettagliata per Aggiungere un Nuovo Scraper
+### Detailed Guide to Add a New Scraper
 
-#### 1. Prerequisiti
+#### 1. Prerequisites
 - Python 3.9+
-- Conoscenza base di web scraping con BeautifulSoup4
-- Git per il versionamento del codice
+- Basic knowledge of web scraping with BeautifulSoup4
+- Git for versioning the code
 
-#### 2. Struttura di un Nuovo Scraper
+#### 2. Structure of a New Scraper
 
-Ogni scraper deve:
-1. Ereditare da `BaseScraper`
-2. Implementare il metodo astratto `parse()`
-3. Restituire i dati nel formato corretto
+Each scraper must:
+1. Inherit from `BaseScraper`
+2. Implement the abstract method `parse()`
+3. Return the data in the correct format
 
-##### Esempio di Template Base
+##### Base Template Example
 ```python
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -117,110 +124,110 @@ from typing import List, Dict, Any
 from .base_scraper import BaseScraper
 
 class NuovoOspedaleScraper(BaseScraper):
-    def __init__(self):
-        super().__init__(
-            url="URL_DEL_PRONTO_SOCCORSO",
-            name="Nome Ospedale"
-        )
-    
-    async def parse(self, html_content: str) -> List[Dict[str, Any]]:
-        soup = BeautifulSoup(html_content, 'html.parser')
-        hospitals_data = []
-        
-        # Implementa qui la logica di parsing
-        data = {
-            'name': "Nome Ospedale",
-            'department': "Pronto Soccorso",
-            'total_patients': 0,  # Numero totale pazienti
-            'waiting_patients': 0,  # Pazienti in attesa
-            'red_code': 0,     # Codici rossi
-            'orange_code': 0,  # Codici arancioni
-            'azure_code': 0,   # Codici azzurri
-            'green_code': 0,   # Codici verdi
-            'white_code': 0,   # Codici bianchi
-            'overcrowding_index': 0.0,  # Indice di sovraffollamento
-            'last_updated': datetime.utcnow(),  # Data ultimo aggiornamento
-            'url': self.url
-        }
-        
-        hospitals_data.append(data)
-        return hospitals_data
+def __init__(self):
+super().__init__(
+url="URL_DEL_EMERGENCY_SOCCORSO",
+name="Name of Hospital"
+)
+
+async def parse(self, html_content: str) -> List[Dict[str, Any]]:
+soup = BeautifulSoup(html_content, 'html.parser')
+hospitals_data = []
+
+# Implement parsing logic here
+data = {
+'name': "Name of Hospital",
+'department': "Emergency Room",
+'total_patients': 0, # Total number of patients
+'waiting_patients': 0, # Patients waiting
+'red_code': 0, # Red codes
+'orange_code': 0, # Codes orange
+'azure_code': 0, # Blue codes
+'green_code': 0, # Green codes
+'white_code': 0, # White codes
+'overcrowding_index': 0.0, # Overcrowding index
+'last_updated': datetime.utcnow(), # Last update date
+'url': self.url
+}
+
+hospitals_data.append(data)
+return hospitals_data
 ```
 
-#### 3. Passi per Contribuire
+#### 3. Contributing Steps
 
-1. **Fork del Repository**
-   ```bash
-   git clone https://github.com/dichiara19/spitalert.git
-   cd spitalert
-   ```
+1. **Fork the Repository**
+```bash
+git clone https://github.com/dichiara19/spitalert.git
+cd spitalert
+```
 
-2. **Crea un Nuovo Branch**
-   ```bash
-   git checkout -b feature/nuovo-ospedale
-   ```
+2. **Create a new branch**
+```bash
+git checkout -b feature/new-hospital
+```
 
-3. **Crea il Nuovo Scraper**
-   - Crea un nuovo file in `scrapers/` (es: `nuovo_ospedale.py`)
-   - Implementa la classe dello scraper seguendo il template
-   - Aggiungi i test necessari
+3. **Create a new scraper**
+- Create a new file in `scrapers/` (eg: `new_hospital.py`)
+- Implement the scraper class following the template
+- Add the necessary tests
 
-4. **Registra lo Scraper**
-   - Aggiungi l'import in `scrapers/__init__.py`
-   - Aggiungi la classe alla lista `AVAILABLE_SCRAPERS`
+4. **Register the scraper**
+- Add the import in `scrapers/__init__.py`
+- Add the class to the `AVAILABLE_SCRAPERS` list
 
-5. **Testa lo Scraper**
-   ```bash
-   python -m pytest tests/test_scrapers.py
-   ```
+5. **Test the scraper**
+```bash
+python -m pytest tests/test_scrapers.py
+```
 
 #### 4. Best Practices
 
-1. **Gestione degli Errori**
-   - Usa try/except per gestire errori di parsing
-   - Logga gli errori in modo appropriato
-   - Restituisci una lista vuota in caso di errore
+1. **Error handling**
+- Use try/except to handle parsing errors
+- Log errors appropriately
+- Return an empty list on error
 
-2. **Parsing Robusto**
-   - Verifica sempre l'esistenza degli elementi prima di accedervi
-   - Usa metodi di fallback per i dati mancanti
-   - Valida i dati estratti
+2. **Robust parsing**
+- Always check for element existence before accessing
+- Use fallback methods for missing data
+- Validate extracted data
 
-3. **Documentazione**
-   - Aggiungi docstring alle funzioni
-   - Commenta il codice complesso
-   - Aggiorna il README se necessario
+3. **Documentation**
+- Add docstrings to functions
+- Comment complex code
+- Update README if necessary
 
 4. **Performance**
-   - Minimizza le operazioni di parsing
-   - Usa selettori CSS/class efficienti
-   - Implementa cache dove appropriato
+- Minimize parsing
+- Use efficient CSS/class selectors
+- Implement cache where appropriate
 
-#### 5. Invio della Contribuzione
+#### 5. Submitting contributions
 
-1. **Commit dei Cambiamenti**
-   ```bash
-   git add .
-   git commit -m "Aggiunto scraper per Ospedale X"
-   ```
+1. **Commit changes**
+```bash
+git add .
+git commit -m "Added scraper for Hospital X"
+```
 
-2. **Push e Pull Request**
-   ```bash
-   git push origin feature/nuovo-ospedale
-   ```
-   - Crea una Pull Request su GitHub
-   - Descrivi dettagliatamente le modifiche
-   - Allega screenshot o esempi dei dati estratti
+2. **Push and create a pull request**
+```bash
+git push origin feature/new-hospital
+```
+- Create a Pull Request on GitHub
+- Describe your changes in detail
+- Attach screenshots or examples of the extracted data
 
-#### 6. Supporto
+#### 6. Support
 
-Per domande o problemi:
-- Apri una issue su GitHub
-- Partecipa alla discussione nel thread dedicato
-- Consulta la documentazione esistente
+For questions or problems:
+- Open an issue on GitHub
+- Join the discussion in the dedicated thread
+- Consult the existing documentation
 
-Ricorda che ogni ospedale può avere una struttura HTML diversa, quindi è importante analizzare attentamente la pagina sorgente prima di implementare il parser.
+Remember that each hospital can have a different HTML structure, so it is important to carefully analyze the source page before implementing the parser.
 
-## Licenza
+## License
 
-MIT 
+MIT
