@@ -1,17 +1,25 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import aiohttp
 from datetime import datetime
 
 class BaseScraper(ABC):
-    def __init__(self, url: str, name: str):
+    def __init__(
+        self, 
+        url: str, 
+        name: str, 
+        headers: Optional[Dict[str, str]] = None,
+        timeout: int = 30
+    ):
         self.url = url
         self.name = name
+        self.headers = headers or {}
+        self.timeout = timeout
     
     async def fetch_page(self) -> str:
         """Recupera il contenuto della pagina web."""
-        async with aiohttp.ClientSession() as session:
-            async with session.get(self.url) as response:
+        async with aiohttp.ClientSession(headers=self.headers) as session:
+            async with session.get(self.url, timeout=self.timeout) as response:
                 return await response.text()
     
     @abstractmethod
