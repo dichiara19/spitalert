@@ -7,7 +7,7 @@ from .base_scraper import BaseScraper
 class PoliclinicoScraper(BaseScraper):
     def __init__(self):
         super().__init__(
-            url="https://www.policlinico.pa.it/portal/index.php",
+            url="https://www.policlinico.pa.it",
             name="Policlinico"
         )
     
