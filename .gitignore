@@ -20,33 +20,28 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual Environment
+# Ambiente virtuale
 venv/
 ENV/
-env/
-.venv/
-.env/
-
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-.cursorrules
-cursorrules
-cursorrules/
 
-# Environment
+# Ambiente
 .env
-.env.example
+.env.local
+.env.*.local
 
-# Logs
+# Log
 *.log
 
 # Database
 *.sqlite3
 *.db
 
-# Frontend
-frontend/
+# Sistema operativo
+.DS_Store
+Thumbs.db 

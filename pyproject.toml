@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "spitalert-backend"
+version = "1.0.0"
+description = "Backend per il monitoraggio del sovraffollamento nei pronto soccorso"
+authors = ["Giuseppe Di Chiara <me@giuseppedichiara.com>"]
+readme = "README.md"
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.104.1"
+uvicorn = "^0.24.0"
+sqlalchemy = "^2.0.23"
+asyncpg = "^0.29.0"
+pydantic = "^2.5.2"
+pydantic-settings = "^2.1.0"
+httpx = "^0.25.2"
+beautifulsoup4 = "^4.12.2"
+tenacity = "^8.2.3"
+gunicorn = "^21.2.0"
+apscheduler = "^3.10.4"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+pytest-asyncio = "^0.21.1"
+black = "^23.11.0"
+isort = "^5.12.0"
+mypy = "^1.7.1"
+ruff = "^0.1.6"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
