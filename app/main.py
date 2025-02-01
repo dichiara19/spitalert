@@ -4,6 +4,7 @@ from .routers import api
 from .database import init_db
 from .scripts.init_hospitals import init_hospitals
 from .config import get_settings
+from .scheduler import setup_scheduler
 import logging
 
 # Configurazione logging
@@ -44,7 +45,7 @@ logger.info(
 async def startup_event():
     """
     Evento di startup dell'applicazione.
-    Inizializza il database e gli ospedali.
+    Inizializza il database, gli ospedali e lo scheduler.
     """
     logger.info("Avvio dell'applicazione...")
     
@@ -61,6 +62,21 @@ async def startup_event():
         logger.error(f"Errore durante l'inizializzazione degli ospedali: {str(e)}", exc_info=True)
         # Non solleviamo l'eccezione per permettere all'app di partire comunque
         # Gli admin possono sempre eseguire l'inizializzazione manualmente con il CLI
+    
+    # Avvia lo scheduler
+    logger.info("Avvio dello scheduler...")
+    setup_scheduler()
+
+# Pulizia alla chiusura
+@app.on_event("shutdown")
+async def shutdown_event():
+    """
+    Evento di shutdown dell'applicazione.
+    Esegue le operazioni di pulizia necessarie.
+    """
+    logger.info("Arresto dell'applicazione...")
+    
+    # Qui possiamo aggiungere altre operazioni di pulizia se necessario
 
 # Inclusione dei router
 app.include_router(api.router, prefix=settings.API_V1_STR)

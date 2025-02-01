@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from ..database import get_db
 from ..models import Hospital, HospitalStatus, HospitalHistory
@@ -9,7 +10,8 @@ from ..schemas import (
     HospitalWithStatus,
     HospitalStats,
     HospitalCreate,
-    HospitalStatusCreate
+    HospitalStatusCreate,
+    HospitalHistory as HospitalHistorySchema
 )
 from datetime import datetime, timedelta
 
@@ -27,7 +29,7 @@ async def get_hospitals(
     Recupera la lista degli ospedali con il loro stato attuale.
     Supporta paginazione e filtri per città e provincia.
     """
-    query = select(Hospital)
+    query = select(Hospital).options(selectinload(Hospital.current_status))
     
     if city:
         query = query.filter(Hospital.city == city)
@@ -110,7 +112,7 @@ async def get_hospital(hospital_id: int, db: AsyncSession = Depends(get_db)):
     
     return hospital
 
-@router.get("/{hospital_id}/history", response_model=List[HospitalHistory])
+@router.get("/{hospital_id}/history", response_model=List[HospitalHistorySchema])
 async def get_hospital_history(
     hospital_id: int,
     days: int = Query(7, ge=1, le=30),

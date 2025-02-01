@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 
 class HospitalBase(BaseModel):
@@ -17,49 +17,40 @@ class HospitalCreate(HospitalBase):
 
 
 class Hospital(HospitalBase):
-    model_config = ConfigDict(from_attributes=True)
-
     id: int
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    model_config = ConfigDict(from_attributes=True)
 
 
 class HospitalStatusBase(BaseModel):
-    available_beds: int = Field(ge=0)
-    waiting_time: int = Field(ge=0)  # in minuti
+    hospital_id: int
+    available_beds: int
+    waiting_time: int
     color_code: str
     external_last_update: Optional[datetime] = None
 
 
 class HospitalStatusCreate(HospitalStatusBase):
-    hospital_id: int
+    pass
 
 
 class HospitalStatus(HospitalStatusBase):
-    model_config = ConfigDict(from_attributes=True)
-
     id: int
-    hospital_id: int
     last_updated: datetime
+    model_config = ConfigDict(from_attributes=True)
 
 
 class HospitalHistoryBase(BaseModel):
-    available_beds: int = Field(ge=0)
-    waiting_time: int = Field(ge=0)
+    hospital_id: int
+    available_beds: int
+    waiting_time: int
     color_code: str
     external_last_update: Optional[datetime] = None
 
 
-class HospitalHistoryCreate(HospitalHistoryBase):
-    hospital_id: int
-
-
 class HospitalHistory(HospitalHistoryBase):
-    model_config = ConfigDict(from_attributes=True)
-
     id: int
-    hospital_id: int
     scraped_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
 
 class HospitalWithStatus(Hospital):
@@ -73,4 +64,4 @@ class HospitalStats(BaseModel):
     total_hospitals: int
     overcrowded_hospitals: int
     average_waiting_time: float
-    hospitals_by_color: dict[str, int] 
+    hospitals_by_color: Dict[str, int] 

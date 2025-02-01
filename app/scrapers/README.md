@@ -4,7 +4,7 @@ Questo modulo contiene l'implementazione degli scraper per i vari ospedali suppo
 
 ## Struttura
 
-```
+```text
 scrapers/
 ├── base.py           # Classe base per gli scraper
 ├── factory.py        # Factory per la creazione degli scraper
@@ -38,6 +38,7 @@ class BaseHospitalScraper(ABC, LoggerMixin):
    - Retry automatico con backoff esponenziale
    - Gestione degli errori HTTP
    - Logging dettagliato
+
    ```python
    async def get_page(self, url: str, **kwargs) -> str:
        return await self.http_client.get_text(url, **kwargs)
@@ -67,54 +68,130 @@ class BaseHospitalScraper(ABC, LoggerMixin):
 
 ## Implementazione di un Nuovo Scraper
 
-1. **Definizione della Classe**
-```python
-from ..scrapers.base import BaseHospitalScraper
-from ..scrapers.hospital_codes import HospitalCode
+### 1. Pattern per Scraper Multipli dello Stesso Ospedale
 
-class MioOspedaleScraper(BaseHospitalScraper):
-    hospital_code = HospitalCode.MIO_OSPEDALE
+Se uno scraper deve gestire più dipartimenti dello stesso ospedale, utilizzare una classe base comune:
+
+```python
+class BaseOspedaleRiunitiScraper(BaseHospitalScraper):
+    """Classe base per gli scraper dell'ospedale"""
+    BASE_URL = "https://ospedale.it/pronto-soccorso"
     
     async def scrape(self) -> HospitalStatusCreate:
-        # Implementazione dello scraping
-        page = await self.get_page("https://mio-ospedale.it/pronto-soccorso")
-        
-        # Parsing dei dati
-        waiting_time = self.parse_waiting_time("45 min")
-        color_code = self.normalize_color_code("verde")
-        
-        return HospitalStatusCreate(
-            hospital_id=self.hospital_id,
-            waiting_time=waiting_time,
-            color_code=color_code,
-            available_beds=10
-        )
-        
-    async def validate_data(self) -> bool:
-        # Validazione personalizzata
-        try:
-            data = await self.scrape()
-            return all([
-                data.waiting_time is not None,
-                data.color_code != "unknown",
-                data.available_beds >= 0
-            ])
-        except Exception as e:
-            self.logger.error(f"Errore durante la validazione: {str(e)}")
-            return False
+        # Implementazione comune
+        pass
+
+class ProntoSoccorsoAdultiScraper(BaseOspedaleRiunitiScraper):
+    """Scraper specifico per PS Adulti"""
+    hospital_code = HospitalCode.PS_ADULTI
+
+class ProntoSoccorsoPediatricoScraper(BaseOspedaleRiunitiScraper):
+    """Scraper specifico per PS Pediatrico"""
+    hospital_code = HospitalCode.PS_PEDIATRICO
 ```
 
-2. **Registrazione nel Factory**
-```python
-from .factory import ScraperFactory
-from .mio_ospedale import MioOspedaleScraper
+### 2. Registrazione nel Factory
 
-ScraperFactory.register(MioOspedaleScraper)
+IMPORTANTE: Registrare OGNI classe specifica, non la classe base:
+
+```python
+# ✅ Corretto
+from .factory import ScraperFactory
+from .ospedale_riuniti import (
+    ProntoSoccorsoAdultiScraper,
+    ProntoSoccorsoPediatricoScraper
+)
+
+ScraperFactory.register_scraper(ProntoSoccorsoAdultiScraper)
+ScraperFactory.register_scraper(ProntoSoccorsoPediatricoScraper)
+
+# ❌ Errato
+ScraperFactory.register_scraper(BaseOspedaleRiunitiScraper)
+```
+
+## Errori Comuni e Soluzioni
+
+### 1. Errore: "Nessuno scraper registrato per l'ospedale"
+
+```python
+ValueError: Nessuno scraper registrato per l'ospedale: HospitalCode.PS_ADULTI
+```
+
+Cause comuni:
+
+- Scraper non registrato nel factory
+- Hospital code non definito nella classe
+- Classe base registrata invece delle classi specifiche
+
+Soluzione:
+
+```python
+# 1. Definire l'hospital_code nella classe
+class MioScraper(BaseHospitalScraper):
+    hospital_code = HospitalCode.PS_ADULTI  # ✅ Obbligatorio
+
+# 2. Registrare lo scraper in __init__.py
+ScraperFactory.register_scraper(MioScraper)  # ✅ Non dimenticare
+```
+
+### 2. Errore: "La classe deve definire l'attributo hospital_code"
+
+```python
+AttributeError: La classe MioScraper deve definire l'attributo 'hospital_code'
+```
+
+Cause comuni:
+
+- Attributo `hospital_code` mancante
+- Attributo definito nel posto sbagliato
+- Valore non valido per `hospital_code`
+
+Soluzione:
+
+```python
+# ✅ Corretto
+class MioScraper(BaseHospitalScraper):
+    hospital_code = HospitalCode.PS_ADULTI  # Come attributo di classe
+
+# ❌ Errato
+class MioScraper(BaseHospitalScraper):
+    def __init__(self):
+        self.hospital_code = HospitalCode.PS_ADULTI  # Come attributo di istanza
+```
+
+### 3. Errore: "Scraper già registrato per il codice ospedale"
+
+```python
+ValueError: Scraper già registrato per il codice ospedale: HospitalCode.PS_ADULTI
+```
+
+Cause comuni:
+
+- Stesso `hospital_code` usato in più scraper
+- Registrazione duplicata dello stesso scraper
+
+Soluzione:
+
+```python
+# ✅ Corretto: Codici univoci per ogni scraper
+class PSAdultiScraper(BaseHospitalScraper):
+    hospital_code = HospitalCode.PS_ADULTI
+
+class PSPediatricoScraper(BaseHospitalScraper):
+    hospital_code = HospitalCode.PS_PEDIATRICO
+
+# ❌ Errato: Stesso codice usato più volte
+class PSAdultiScraper(BaseHospitalScraper):
+    hospital_code = HospitalCode.PS_ADULTI
+
+class PSEmergenzaScraper(BaseHospitalScraper):
+    hospital_code = HospitalCode.PS_ADULTI  # Duplicato!
 ```
 
 ## Best Practices
 
 ### 1. Gestione HTTP
+
 - Utilizzare sempre i metodi `get_page()` e `get_json()` della classe base
 - Non implementare chiamate HTTP dirette nei singoli scraper
 - Configurare timeout appropriati per l'ospedale specifico
@@ -129,6 +206,7 @@ async with httpx.AsyncClient() as client:
 ```
 
 ### 2. Parsing dei Tempi
+
 - Utilizzare il parser centralizzato per i tempi di attesa
 - Gestire casi specifici dell'ospedale prima della normalizzazione
 
@@ -144,6 +222,7 @@ waiting_time = hours * 60
 ```
 
 ### 3. Codici Colore
+
 - Utilizzare sempre il normalizzatore di codici colore
 - Aggiungere mappature specifiche se necessario
 
@@ -156,6 +235,7 @@ color = raw_color.lower()
 ```
 
 ### 4. Logging
+
 - Utilizzare il logger ereditato da `LoggerMixin`
 - Loggare informazioni utili per il debugging
 - Utilizzare i livelli appropriati (DEBUG, INFO, WARNING, ERROR)
@@ -172,6 +252,7 @@ print(f"Errore: {e}")
 ```
 
 ### 5. Validazione
+
 - Implementare controlli specifici per l'ospedale
 - Validare tutti i campi obbligatori
 - Loggare dettagli sui fallimenti
@@ -212,6 +293,7 @@ SCRAPE_TIMEOUT=60.0
 ## Testing
 
 Ogni scraper dovrebbe includere test per:
+
 1. Parsing dei tempi di attesa
 2. Normalizzazione dei codici colore
 3. Gestione degli errori HTTP

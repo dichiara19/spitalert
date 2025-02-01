@@ -1,9 +1,9 @@
 from typing import Dict, Any, Type
 from .base import BaseHospitalScraper
 from .hospital_codes import HospitalCode, HospitalRegistry
-from ..core.logging import LoggerMixin
+from ..core.logging import scraper_logger
 
-class ScraperFactory(LoggerMixin):
+class ScraperFactory:
     """
     Factory per la creazione di scraper specifici per ogni ospedale.
     """
@@ -30,7 +30,7 @@ class ScraperFactory(LoggerMixin):
             )
         
         cls._scrapers[hospital_code] = scraper_class
-        cls.logger.info(
+        scraper_logger.info(
             f"Registrato scraper {scraper_class.__name__} "
             f"per l'ospedale {hospital_code}"
         )
@@ -64,7 +64,7 @@ class ScraperFactory(LoggerMixin):
                 f"Nessuno scraper registrato per l'ospedale: {hospital_code}"
             )
         
-        cls.logger.debug(
+        scraper_logger.debug(
             f"Creazione scraper {scraper_class.__name__} "
             f"per ospedale {hospital_code} (ID: {hospital_id})"
         )

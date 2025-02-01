@@ -2,13 +2,13 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 import re
 from bs4 import BeautifulSoup
-from ..base import BaseHospitalScraper
-from ...schemas import HospitalStatusCreate
-from ..hospital_codes import HospitalCode
+from .base import BaseHospitalScraper
+from ..schemas import HospitalStatusCreate
+from .hospital_codes import HospitalCode
 
-class OspedaliRiunitiPalermoScraper(BaseHospitalScraper):
+class BaseOspedaliRiunitiPalermoScraper(BaseHospitalScraper):
     """
-    Scraper per gli Ospedali Riuniti di Palermo.
+    Scraper base per gli Ospedali Riuniti di Palermo.
     Gestisce tre pronto soccorso:
     - P.O. Cervello (Adulti)
     - P.O. Villa Sofia (Adulti)
@@ -203,4 +203,16 @@ class OspedaliRiunitiPalermoScraper(BaseHospitalScraper):
             ])
         except Exception as e:
             self.logger.error(f"Errore durante la validazione: {str(e)}")
-            return False 
+            return False
+
+class POCervelloAdultiScraper(BaseOspedaliRiunitiPalermoScraper):
+    """Scraper per il P.O. Cervello (Adulti)"""
+    hospital_code = HospitalCode.PO_CERVELLO_ADULTI
+
+class POVillaSofiaAdultiScraper(BaseOspedaliRiunitiPalermoScraper):
+    """Scraper per il P.O. Villa Sofia (Adulti)"""
+    hospital_code = HospitalCode.PO_VILLA_SOFIA_ADULTI
+
+class POCervelloPediatricoScraper(BaseOspedaliRiunitiPalermoScraper):
+    """Scraper per il P.O. Cervello (Pediatrico)"""
+    hospital_code = HospitalCode.PO_CERVELLO_PEDIATRICO 

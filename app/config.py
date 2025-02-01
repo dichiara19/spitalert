@@ -109,6 +109,7 @@ class Settings(BaseSettings):
     CACHE_ENABLED: bool = True
     
     # Scraping
+    SCRAPE_ENABLED: bool = True
     SCRAPE_INTERVAL: int = 300  # secondi
     SCRAPE_TIMEOUT: float = 60.0
     SCRAPE_MAX_RETRIES: int = 3

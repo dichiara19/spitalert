@@ -27,15 +27,21 @@ def setup_scheduler():
         logger.info("Scheduler disabilitato dalle configurazioni")
         return
         
+    # Log del valore di SCRAPE_INTERVAL
+    logger.info(f"SCRAPE_INTERVAL configurato: {settings.SCRAPE_INTERVAL} secondi")
+    
+    # Converti l'intervallo da secondi a minuti
+    minutes_interval = settings.SCRAPE_INTERVAL // 60
+    
     # Esegui lo scraping secondo l'intervallo configurato
     scheduler.add_job(
         scrape_all_hospitals,
-        CronTrigger(second=f"*/{settings.SCRAPE_INTERVAL}"),
+        CronTrigger(minute=f"*/{minutes_interval}"),  # Usa i minuti invece dei secondi
         id="scrape_hospitals",
         replace_existing=True,
         max_instances=1  # Evita esecuzioni sovrapposte
     )
     scheduler.start()
     logger.info(
-        f"Scheduler avviato - Intervallo: {settings.SCRAPE_INTERVAL} secondi"
+        f"Scheduler avviato - Intervallo: {minutes_interval} minuti"
     ) 

@@ -17,8 +17,7 @@ HOSPITALS_DATA: Dict[HospitalCode, Dict[str, Any]] = {
         "province": "PA",
         "address": "Via Trabucco, 180",
         "latitude": 38.154466,
-        "longitude": 13.314139,
-        "zip_code": "90146"
+        "longitude": 13.314139
     },
     HospitalCode.PO_CERVELLO_PEDIATRICO: {
         "name": "P.O. Cervello",
@@ -27,8 +26,7 @@ HOSPITALS_DATA: Dict[HospitalCode, Dict[str, Any]] = {
         "province": "PA",
         "address": "Via Trabucco, 180",
         "latitude": 38.154466,
-        "longitude": 13.314139,
-        "zip_code": "90146"
+        "longitude": 13.314139
     },
     HospitalCode.PO_VILLA_SOFIA_ADULTI: {
         "name": "P.O. Villa Sofia",
@@ -37,8 +35,7 @@ HOSPITALS_DATA: Dict[HospitalCode, Dict[str, Any]] = {
         "province": "PA",
         "address": "Piazza Salerno, 1",
         "latitude": 38.154399,
-        "longitude": 13.336450,
-        "zip_code": "90146"
+        "longitude": 13.336450
     }
 }
 

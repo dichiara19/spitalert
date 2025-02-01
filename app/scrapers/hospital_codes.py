@@ -6,9 +6,6 @@ class HospitalCode(str, Enum):
     Enum per i codici degli ospedali.
     Ogni ospedale deve avere un codice univoco qui.
     """
-    SAN_RAFFAELE = "san_raffaele"
-    NIGUARDA = "niguarda"
-    POLICLINICO = "policlinico"
     PO_CERVELLO_ADULTI = "po_cervello_adulti"
     PO_CERVELLO_PEDIATRICO = "po_cervello_pediatrico"
     PO_VILLA_SOFIA_ADULTI = "po_villa_sofia_adulti"

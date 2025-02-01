@@ -15,6 +15,7 @@ class Hospital(Base):
     address = Column(Text, nullable=False)
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
+    department = Column(String, nullable=False)
     
     # Relazioni
     current_status = relationship("HospitalStatus", back_populates="hospital", uselist=False)
