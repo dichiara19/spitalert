@@ -11,9 +11,13 @@ from ..schemas import (
     HospitalStats,
     HospitalCreate,
     HospitalStatusCreate,
-    HospitalHistory as HospitalHistorySchema
+    HospitalHistory as HospitalHistorySchema,
+    HospitalWithDetailedStatus,
+    ColorCodeDistribution
 )
 from datetime import datetime, timedelta
+from bs4 import BeautifulSoup
+from ..scrapers import ScraperFactory
 
 router = APIRouter()
 
@@ -29,14 +33,22 @@ async def get_hospitals(
     Recupera la lista degli ospedali con il loro stato attuale.
     Supporta paginazione e filtri per città e provincia.
     """
-    query = select(Hospital).options(selectinload(Hospital.current_status))
+    # Costruisci la query base con il caricamento eager delle relazioni
+    query = (
+        select(Hospital)
+        .options(selectinload(Hospital.current_status))
+    )
     
+    # Applica i filtri
     if city:
         query = query.filter(Hospital.city == city)
     if province:
         query = query.filter(Hospital.province == province)
     
+    # Applica paginazione
     query = query.offset(skip).limit(limit)
+    
+    # Esegui la query
     result = await db.execute(query)
     hospitals = result.scalars().all()
     
@@ -52,9 +64,19 @@ async def get_hospital_stats(db: AsyncSession = Depends(get_db)):
     total_result = await db.execute(total_query)
     total_hospitals = total_result.scalar()
     
-    # Statistiche sullo stato attuale
-    status_query = select(HospitalStatus)
-    status_result = await db.execute(status_query)
+    # Query per ottenere gli stati più recenti per ogni ospedale
+    latest_status_query = (
+        select(HospitalStatus)
+        .join(Hospital)
+        .options(selectinload(HospitalStatus.hospital))
+        .distinct(HospitalStatus.hospital_id)
+        .order_by(
+            HospitalStatus.hospital_id,
+            HospitalStatus.last_updated.desc()
+        )
+    )
+    
+    status_result = await db.execute(latest_status_query)
     statuses = status_result.scalars().all()
     
     # Calcolo statistiche
@@ -72,6 +94,58 @@ async def get_hospital_stats(db: AsyncSession = Depends(get_db)):
         average_waiting_time=avg_waiting,
         hospitals_by_color=colors
     )
+
+@router.get("/detailed", response_model=List[HospitalWithDetailedStatus])
+async def get_hospitals_detailed(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Recupera la lista degli ospedali con la distribuzione dettagliata dei codici colore.
+    """
+    # Recupera gli ospedali con il loro stato corrente
+    query = (
+        select(Hospital)
+        .options(selectinload(Hospital.current_status))
+        .offset(skip)
+        .limit(limit)
+    )
+    
+    result = await db.execute(query)
+    hospitals = result.scalars().all()
+    
+    # Per ogni ospedale, recupera la distribuzione dei codici colore dal sito
+    for hospital in hospitals:
+        if hospital.current_status:
+            # Crea uno scraper per l'ospedale
+            scraper = ScraperFactory.create_scraper(
+                hospital_id=hospital.id,
+                config={}
+            )
+            
+            # Ottieni i dati grezzi dal sito
+            html = await scraper.get_page(scraper.BASE_URL)
+            soup = BeautifulSoup(html, 'html.parser')
+            
+            # Seleziona il container dell'ospedale
+            selector = scraper.hospital_selectors.get(scraper.hospital_code)
+            hospital_div = soup.select_one(selector)
+            
+            if hospital_div:
+                # Estrai i conteggi per ogni codice colore
+                distribution = ColorCodeDistribution(
+                    white=scraper._extract_number(hospital_div, ".olo-codice-grey .olo-number-codice"),
+                    green=scraper._extract_number(hospital_div, ".olo-codice-green .olo-number-codice"),
+                    blue=scraper._extract_number(hospital_div, ".olo-codice-azure .olo-number-codice"),
+                    orange=scraper._extract_number(hospital_div, ".olo-codice-orange .olo-number-codice"),
+                    red=scraper._extract_number(hospital_div, ".olo-codice-red .olo-number-codice")
+                )
+                
+                # Aggiungi la distribuzione allo stato corrente
+                hospital.current_status.color_distribution = distribution
+    
+    return hospitals
 
 @router.get("/nearby", response_model=List[HospitalWithStatus])
 async def get_nearby_hospitals(
@@ -103,7 +177,12 @@ async def get_hospital(hospital_id: int, db: AsyncSession = Depends(get_db)):
     """
     Recupera i dettagli di un singolo ospedale con il suo stato attuale.
     """
-    query = select(Hospital).filter(Hospital.id == hospital_id)
+    # Carica l'ospedale e il suo stato corrente in una singola query
+    query = (
+        select(Hospital)
+        .options(selectinload(Hospital.current_status))
+        .filter(Hospital.id == hospital_id)
+    )
     result = await db.execute(query)
     hospital = result.scalar_one_or_none()
     
@@ -134,4 +213,51 @@ async def get_hospital_history(
     if not history:
         raise HTTPException(status_code=404, detail="Nessuno storico trovato per questo ospedale")
     
-    return history 
+    return history
+
+@router.get("/{hospital_id}/detailed", response_model=HospitalWithDetailedStatus)
+async def get_hospital_detailed(hospital_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Recupera i dettagli di un singolo ospedale con la distribuzione dettagliata dei codici colore.
+    """
+    # Carica l'ospedale e il suo stato corrente
+    query = (
+        select(Hospital)
+        .options(selectinload(Hospital.current_status))
+        .filter(Hospital.id == hospital_id)
+    )
+    result = await db.execute(query)
+    hospital = result.scalar_one_or_none()
+    
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Ospedale non trovato")
+        
+    if hospital.current_status:
+        # Crea uno scraper per l'ospedale
+        scraper = ScraperFactory.create_scraper(
+            hospital_id=hospital.id,
+            config={}
+        )
+        
+        # Ottieni i dati grezzi dal sito
+        html = await scraper.get_page(scraper.BASE_URL)
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        # Seleziona il container dell'ospedale
+        selector = scraper.hospital_selectors.get(scraper.hospital_code)
+        hospital_div = soup.select_one(selector)
+        
+        if hospital_div:
+            # Estrai i conteggi per ogni codice colore
+            distribution = ColorCodeDistribution(
+                white=scraper._extract_number(hospital_div, ".olo-codice-grey .olo-number-codice"),
+                green=scraper._extract_number(hospital_div, ".olo-codice-green .olo-number-codice"),
+                blue=scraper._extract_number(hospital_div, ".olo-codice-azure .olo-number-codice"),
+                orange=scraper._extract_number(hospital_div, ".olo-codice-orange .olo-number-codice"),
+                red=scraper._extract_number(hospital_div, ".olo-codice-red .olo-number-codice")
+            )
+            
+            # Aggiungi la distribuzione allo stato corrente
+            hospital.current_status.color_distribution = distribution
+    
+    return hospital 

@@ -3,7 +3,7 @@ import asyncio
 from .scripts.init_hospitals import init_hospitals
 import logging
 
-# Configurazione logging
+# logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'

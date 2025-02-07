@@ -4,14 +4,14 @@ from .config import get_settings
 
 settings = get_settings()
 
-# Creazione engine asincrono
+# create async engine
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
     future=True
 )
 
-# Creazione session maker asincrono
+# create async session maker
 AsyncSessionLocal = sessionmaker(
     engine,
     class_=AsyncSession,
@@ -29,7 +29,7 @@ async def get_db() -> AsyncSession:
         finally:
             await session.close()
 
-# Funzione per inizializzare il database
+# function to initialize database
 async def init_db():
     from .models import Base
     async with engine.begin() as conn:

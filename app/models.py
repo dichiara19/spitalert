@@ -17,7 +17,7 @@ class Hospital(Base):
     longitude = Column(Float, nullable=False)
     department = Column(String, nullable=False)
     
-    # Relazioni
+    # rel
     current_status = relationship("HospitalStatus", back_populates="hospital", uselist=False)
     history = relationship("HospitalHistory", back_populates="hospital")
 
@@ -32,7 +32,7 @@ class HospitalStatus(Base):
     last_updated = Column(DateTime, default=datetime.utcnow)
     external_last_update = Column(DateTime, nullable=True)
     
-    # Relazione
+    # rel
     hospital = relationship("Hospital", back_populates="current_status")
 
 class HospitalHistory(Base):
@@ -46,5 +46,5 @@ class HospitalHistory(Base):
     scraped_at = Column(DateTime, default=datetime.utcnow)
     external_last_update = Column(DateTime, nullable=True)
     
-    # Relazione
+    # rel
     hospital = relationship("Hospital", back_populates="history") 

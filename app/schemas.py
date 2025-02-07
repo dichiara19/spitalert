@@ -64,4 +64,23 @@ class HospitalStats(BaseModel):
     total_hospitals: int
     overcrowded_hospitals: int
     average_waiting_time: float
-    hospitals_by_color: Dict[str, int] 
+    hospitals_by_color: Dict[str, int]
+
+
+class ColorCodeDistribution(BaseModel):
+    white: int = 0
+    green: int = 0
+    blue: int = 0
+    orange: int = 0
+    red: int = 0
+
+
+class HospitalStatusDetail(HospitalStatus):
+    color_distribution: ColorCodeDistribution
+
+
+class HospitalWithDetailedStatus(Hospital):
+    current_status: Optional[HospitalStatusDetail] = None
+    
+    class Config:
+        from_attributes = True 

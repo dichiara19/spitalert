@@ -7,7 +7,7 @@ from .config import get_settings
 from .scheduler import setup_scheduler
 import logging
 
-# Configurazione logging
+# logging config
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -23,7 +23,7 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None,  # Disabilita ReDoc in produzione
 )
 
-# Configurazione CORS
+# CORS config
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -34,13 +34,13 @@ app.add_middleware(
     max_age=settings.CORS_MAX_AGE,
 )
 
-# Log della configurazione CORS all'avvio
+# log CORS config at startup
 logger.info(
-    "Configurazione CORS: domini consentiti %s",
+    "CORS config: allowed domains %s",
     settings.cors_origins
 )
 
-# Inizializzazione del database all'avvio
+# database initialization at startup
 @app.on_event("startup")
 async def startup_event():
     """
@@ -49,25 +49,25 @@ async def startup_event():
     """
     logger.info("Avvio dell'applicazione...")
     
-    # Inizializza il database
+    # initialize database
     logger.info("Inizializzazione database...")
     await init_db()
     
-    # Inizializza gli ospedali
+    # initialize hospitals
     logger.info("Inizializzazione ospedali...")
     try:
         await init_hospitals()
         logger.info("Inizializzazione ospedali completata con successo")
     except Exception as e:
         logger.error(f"Errore durante l'inizializzazione degli ospedali: {str(e)}", exc_info=True)
-        # Non solleviamo l'eccezione per permettere all'app di partire comunque
-        # Gli admin possono sempre eseguire l'inizializzazione manualmente con il CLI
+        # do not raise exception to allow app to start anyway
+        # admins can always initialize manually with the CLI
     
-    # Avvia lo scheduler
-    logger.info("Avvio dello scheduler...")
+    # start scheduler
+    logger.info("Starting scheduler...")
     setup_scheduler()
 
-# Pulizia alla chiusura
+# cleanup at shutdown
 @app.on_event("shutdown")
 async def shutdown_event():
     """
@@ -76,12 +76,12 @@ async def shutdown_event():
     """
     logger.info("Arresto dell'applicazione...")
     
-    # Qui possiamo aggiungere altre operazioni di pulizia se necessario
+    # feature: cleanup scheduler, add other cleanup operations if needed
 
-# Inclusione dei router
+# include routers
 app.include_router(api.router, prefix=settings.API_V1_STR)
 
-# Root endpoint per health check
+# health check endpoint
 @app.get("/")
 async def health_check():
     """
