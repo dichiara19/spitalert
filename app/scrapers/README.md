@@ -23,6 +23,7 @@ from .hospital_codes import HospitalCode
 
 class BaseHospitalScraper(ABC, LoggerMixin):
     hospital_code: ClassVar[HospitalCode]  # Deve essere definito nelle classi derivate
+    is_api_based: ClassVar[bool] = False   # True per scraper basati su API
     
     async def scrape(self) -> HospitalStatusCreate:
         pass  # Da implementare
@@ -38,6 +39,7 @@ class BaseHospitalScraper(ABC, LoggerMixin):
    - Retry automatico con backoff esponenziale
    - Gestione degli errori HTTP
    - Logging dettagliato
+   - Supporto per chiamate REST API e scraping HTML
 
    ```python
    async def get_page(self, url: str, **kwargs) -> str:
@@ -66,9 +68,66 @@ class BaseHospitalScraper(ABC, LoggerMixin):
      - red/rosso → red
    - Logging delle conversioni non standard
 
+## Tipi di Scraper
+
+### 1. Scraper HTML
+
+Per ospedali che espongono i dati tramite pagine web HTML:
+
+```python
+class HTMLBasedScraper(BaseHospitalScraper):
+    """Scraper che utilizza parsing HTML"""
+    hospital_code = HospitalCode.EXAMPLE_HOSPITAL
+    is_api_based = False  # Default, può essere omesso
+    
+    # Selettori CSS per l'estrazione dei dati
+    hospital_selectors = {
+        "container": ".hospital-status",
+        "waiting_time": ".waiting-time",
+        "patients_waiting": ".patients-count",
+        "color_code": ".triage-color",
+        "available_beds": ".available-beds"
+    }
+    
+    async def scrape(self) -> HospitalStatusCreate:
+        html = await self.get_page(self.BASE_URL)
+        # Implementa il parsing HTML
+```
+
+### 2. Scraper API REST
+
+Per ospedali che forniscono API REST:
+
+```python
+class APIBasedScraper(BaseHospitalScraper):
+    """Scraper che utilizza API REST"""
+    hospital_code = HospitalCode.EXAMPLE_API_HOSPITAL
+    is_api_based = True
+    
+    BASE_URL = "https://api.hospital.com/v1"
+    ENDPOINTS = {
+        "status": "/status",
+        "details": "/details"
+    }
+    
+    async def get_endpoint_url(self, endpoint: str) -> str:
+        return f"{self.BASE_URL}{self.ENDPOINTS[endpoint]}"
+        
+    async def get_color_distribution(self) -> Optional[ColorCodeDistribution]:
+        """Metodo specifico per scraper API"""
+        data = await self.get_json(await self.get_endpoint_url("status"))
+        return ColorCodeDistribution(...)
+```
+
 ## Implementazione di un Nuovo Scraper
 
-### 1. Pattern per Scraper Multipli dello Stesso Ospedale
+### 1. Scegliere il Tipo di Scraper
+
+Prima di implementare, determinare se l'ospedale espone:
+- Pagina web HTML → Usare scraping HTML
+- API REST → Usare chiamate API dirette
+
+### 2. Pattern per Scraper Multipli dello Stesso Ospedale
 
 Se uno scraper deve gestire più dipartimenti dello stesso ospedale, utilizzare una classe base comune:
 
@@ -76,6 +135,7 @@ Se uno scraper deve gestire più dipartimenti dello stesso ospedale, utilizzare 
 class BaseOspedaleRiunitiScraper(BaseHospitalScraper):
     """Classe base per gli scraper dell'ospedale"""
     BASE_URL = "https://ospedale.it/pronto-soccorso"
+    is_api_based = False  # o True se usa API
     
     async def scrape(self) -> HospitalStatusCreate:
         # Implementazione comune
@@ -90,7 +150,7 @@ class ProntoSoccorsoPediatricoScraper(BaseOspedaleRiunitiScraper):
     hospital_code = HospitalCode.PS_PEDIATRICO
 ```
 
-### 2. Registrazione nel Factory
+### 3. Registrazione nel Factory
 
 IMPORTANTE: Registrare OGNI classe specifica, non la classe base:
 

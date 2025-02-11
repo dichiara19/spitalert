@@ -6,6 +6,7 @@ from ..core.logging import LoggerMixin
 from .hospital_codes import HospitalCode
 from ..utils.parsing import parse_waiting_time
 from ..utils.http import HTTPClient
+from ..schemas import ColorCodeDistribution
 
 class BaseHospitalScraper(ABC, LoggerMixin):
     """
@@ -13,7 +14,7 @@ class BaseHospitalScraper(ABC, LoggerMixin):
     Ogni nuovo scraper deve implementare questa interfaccia.
     """
     
-    # Codice dell'ospedale, da definire in ogni classe derivata
+    # hospital code, to be defined in each derived class
     hospital_code: ClassVar[HospitalCode]
     
     def __init__(self, hospital_id: int, config: Dict[str, Any]):
@@ -80,9 +81,9 @@ class BaseHospitalScraper(ABC, LoggerMixin):
             
         color = color.lower().strip()
         
-        # Mappatura dei colori standard
+        # mapping of standard colors
         color_mapping = {
-            # Codici standard
+            # standard codes
             'white': 'white',
             'bianco': 'white',
             'green': 'green',
@@ -93,8 +94,8 @@ class BaseHospitalScraper(ABC, LoggerMixin):
             'arancione': 'orange',
             'red': 'red',
             'rosso': 'red',
-            # Possibili varianti
-            'yellow': 'orange',  # Alcuni ospedali usano giallo invece di arancione
+            # possible variants
+            'yellow': 'orange',  # some hospitals use yellow instead of orange
             'giallo': 'orange',
         }
         
@@ -119,10 +120,10 @@ class BaseHospitalScraper(ABC, LoggerMixin):
             return None
             
         try:
-            # Rimuove spazi extra e converte in minuscolo
+            # remove extra spaces and convert to lowercase
             time_str = time_str.lower().strip()
             
-            # Gestisce diversi formati comuni
+            # handles common formats
             if 'min' in time_str:
                 return int(time_str.replace('min', '').strip())
             elif 'ora' in time_str or 'ore' in time_str:
@@ -132,7 +133,7 @@ class BaseHospitalScraper(ABC, LoggerMixin):
                 hours, minutes = map(int, time_str.split(':'))
                 return hours * 60 + minutes
             else:
-                # Assume che sia un numero in minuti
+                # assume it's a number in minutes
                 return int(time_str)
         except (ValueError, TypeError) as e:
             self.logger.error(
@@ -165,4 +166,23 @@ class BaseHospitalScraper(ABC, LoggerMixin):
         Returns:
             Dict[str, Any]: Dati JSON decodificati
         """
-        return await self.http_client.get_json(url, **kwargs) 
+        return await self.http_client.get_json(url, **kwargs)
+    
+    def ensure_color_distribution(self, data: Optional[Dict[str, int]]) -> ColorCodeDistribution:
+        """
+        Garantisce che la distribuzione dei codici colore sia sempre presente.
+        Se i dati non sono disponibili, imposta i valori a zero.
+        
+        Args:
+            data: Dizionario con i conteggi per ogni codice colore
+            
+        Returns:
+            ColorCodeDistribution: Distribuzione dei codici colore
+        """
+        return ColorCodeDistribution(
+            red=data.get('ROSSO', 0) if data else 0,
+            orange=data.get('ARANCIONE', 0) + data.get('GIALLO', 0) if data else 0,
+            blue=data.get('AZZURRO', 0) if data else 0,
+            green=data.get('VERDE', 0) if data else 0,
+            white=data.get('BIANCO', 0) if data else 0
+        ) 

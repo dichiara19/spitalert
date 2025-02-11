@@ -3,7 +3,7 @@ from . import hospitals, scraper
 
 router = APIRouter()
 
-# Includi i router specifici
+# specific routers
 router.include_router(
     hospitals.router,
     prefix="/hospitals",

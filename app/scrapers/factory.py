@@ -50,14 +50,14 @@ class ScraperFactory:
         Raises:
             ValueError: Se nessuno scraper è registrato per l'ospedale
         """
-        # Ottiene il codice ospedale dal registry
+        # get the hospital code from the registry
         hospital_code = HospitalRegistry.get_code(hospital_id)
         if not hospital_code:
             raise ValueError(
                 f"Nessun codice ospedale registrato per l'ID: {hospital_id}"
             )
         
-        # Ottiene la classe dello scraper
+        # get the scraper class
         scraper_class = cls._scrapers.get(hospital_code)
         if not scraper_class:
             raise ValueError(

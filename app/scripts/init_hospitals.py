@@ -36,6 +36,132 @@ HOSPITALS_DATA: Dict[HospitalCode, Dict[str, Any]] = {
         "address": "Piazza Salerno, 1",
         "latitude": 38.154399,
         "longitude": 13.336450
+    },
+    HospitalCode.POLICLINICO_PALERMO: {
+        "name": "P.O. Policlinico \"Paolo Giaccone\"",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Palermo",
+        "province": "PA",
+        "address": "Via del Vespro, 129",
+        "latitude": 38.103469,
+        "longitude": 13.3622403
+    },
+    HospitalCode.PS_SCIACCA: {
+        "name": "P.O. \"San Giovanni Paolo II\" di Sciacca",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Sciacca",
+        "province": "AG",
+        "address": "Via Pompei",
+        "latitude": 37.5086,
+        "longitude": 13.0778
+    },
+    HospitalCode.PS_RIBERA: {
+        "name": "P.O. \"F.lli Parlapiano\" di Ribera",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Ribera",
+        "province": "AG",
+        "address": "Via Circonvallazione",
+        "latitude": 37.3343,
+        "longitude": 13.2686
+    },
+    HospitalCode.PS_LICATA: {
+        "name": "P.O. Medicina e Chirurgia di Accettazione e Urgenza di Licata",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Licata",
+        "province": "AG",
+        "address": "Contrada Cannavecchia",
+        "latitude": 37.1018,
+        "longitude": 13.9372
+    },
+    HospitalCode.PS_CANICATTI: {
+        "name": "P.O. Barone Lombardo di Canicattì",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Canicattì",
+        "province": "AG",
+        "address": "Via Giudice Antonino Saetta",
+        "latitude": 37.3571,
+        "longitude": 13.8471
+    },
+    HospitalCode.PS_AGRIGENTO: {
+        "name": "P.O. \"San Giovanni di Dio\" di Agrigento",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Agrigento",
+        "province": "AG",
+        "address": "Contrada Consolida",
+        "latitude": 37.3220,
+        "longitude": 13.5896
+    },
+    HospitalCode.PS_SANTELIA: {
+        "name": "P.O. Sant'Elia",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Caltanissetta",
+        "province": "CL",
+        "address": "Via Luigi Russo, 6",
+        "latitude": 37.489289,
+        "longitude": 14.031392
+    },
+    HospitalCode.PS_INGRASSIA: {
+        "name": "P.O. Ingrassia",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Palermo",
+        "province": "PA",
+        "address": "Corso Calatafimi, 1002",
+        "latitude": 38.107778,
+        "longitude": 13.339722
+    },
+    HospitalCode.PS_PARTINICO: {
+        "name": "P.O. Civico di Partinico",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Partinico",
+        "province": "PA",
+        "address": "Contrada Sicciarotta",
+        "latitude": 38.047222,
+        "longitude": 13.116944
+    },
+    HospitalCode.PS_CORLEONE: {
+        "name": "P.O. 'Dei Bianchi'",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Corleone",
+        "province": "PA",
+        "address": "Via Don Giovanni Colletto",
+        "latitude": 37.812500,
+        "longitude": 13.302778
+    },
+    HospitalCode.PS_PETRALIA: {
+        "name": "P.O. Madonna SS. dell'Alto",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Petralia Sottana",
+        "province": "PA",
+        "address": "Contrada Sant'Elia",
+        "latitude": 37.810833,
+        "longitude": 14.095833
+    },
+    HospitalCode.PS_TERMINI: {
+        "name": "P.O. Cimino",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Termini Imerese",
+        "province": "PA",
+        "address": "Via Salvatore Cimino, 2",
+        "latitude": 37.985833,
+        "longitude": 13.701944
+    },
+    HospitalCode.PO_CIVICO_ADULTI: {
+        "name": "P.O. Civico e Benfratelli",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Palermo",
+        "province": "PA",
+        "address": "Piazza Nicola Leotta, 4",
+        "latitude": 38.111389,
+        "longitude": 13.359722
+    },
+    HospitalCode.PO_CIVICO_PEDIATRICO: {
+        "name": "P.O. Giovanni Di Cristina",
+        "department": "Pronto Soccorso Pediatrico",
+        "city": "Palermo",
+        "province": "PA",
+        "address": "Via dei Benedettini, 1",
+        "latitude": 38.109722,
+        "longitude": 13.361944
     }
 }
 

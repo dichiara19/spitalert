@@ -9,6 +9,20 @@ class HospitalCode(str, Enum):
     PO_CERVELLO_ADULTI = "po_cervello_adulti"
     PO_CERVELLO_PEDIATRICO = "po_cervello_pediatrico"
     PO_VILLA_SOFIA_ADULTI = "po_villa_sofia_adulti"
+    POLICLINICO_PALERMO = "policlinico_palermo"
+    PS_SCIACCA = "ps_sciacca"
+    PS_RIBERA = "ps_ribera"
+    PS_AGRIGENTO = "ps_agrigento"
+    PS_CANICATTI = "ps_canicatti"
+    PS_LICATA = "ps_licata"
+    PS_SANTELIA = "ps_santelia"
+    PS_INGRASSIA = "ps_ingrassia"
+    PS_PARTINICO = "ps_partinico"
+    PS_CORLEONE = "ps_corleone"
+    PS_PETRALIA = "ps_petralia"
+    PS_TERMINI = "ps_termini"
+    PO_CIVICO_ADULTI = "po_civico_adulti"
+    PO_CIVICO_PEDIATRICO = "po_civico_pediatrico"
     # Aggiungi altri ospedali qui...
 
 class HospitalRegistry:

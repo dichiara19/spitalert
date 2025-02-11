@@ -67,6 +67,9 @@ class BaseOspedaliRiunitiPalermoScraper(BaseHospitalScraper):
                 'white': self._extract_number(hospital_div, ".olo-codice-grey .olo-number-codice")
             }
             
+            # Usa ensure_color_distribution per garantire la presenza della distribuzione
+            color_distribution = self.ensure_color_distribution(codes)
+            
             # Determina il codice colore dominante
             color_code = self._determine_color_code(codes)
             
@@ -89,6 +92,7 @@ class BaseOspedaliRiunitiPalermoScraper(BaseHospitalScraper):
                 waiting_time=waiting_time,
                 color_code=color_code,
                 available_beds=max(0, 100 - total_patients),  # Stima basata sul totale pazienti
+                color_distribution=color_distribution,
                 external_last_update=external_last_update
             )
             

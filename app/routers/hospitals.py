@@ -18,6 +18,7 @@ from ..schemas import (
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 from ..scrapers import ScraperFactory
+import logging
 
 router = APIRouter()
 
@@ -33,22 +34,22 @@ async def get_hospitals(
     Recupera la lista degli ospedali con il loro stato attuale.
     Supporta paginazione e filtri per città e provincia.
     """
-    # Costruisci la query base con il caricamento eager delle relazioni
+    # base query with eager loading
     query = (
         select(Hospital)
         .options(selectinload(Hospital.current_status))
     )
     
-    # Applica i filtri
+    # apply filters
     if city:
         query = query.filter(Hospital.city == city)
     if province:
         query = query.filter(Hospital.province == province)
     
-    # Applica paginazione
+    # apply pagination
     query = query.offset(skip).limit(limit)
     
-    # Esegui la query
+    # execute query
     result = await db.execute(query)
     hospitals = result.scalars().all()
     
@@ -59,12 +60,12 @@ async def get_hospital_stats(db: AsyncSession = Depends(get_db)):
     """
     Recupera statistiche aggregate sugli ospedali.
     """
-    # Totale ospedali
+    # total hospitals
     total_query = select(func.count()).select_from(Hospital)
     total_result = await db.execute(total_query)
     total_hospitals = total_result.scalar()
     
-    # Query per ottenere gli stati più recenti per ogni ospedale
+    # query to get the latest status for each hospital
     latest_status_query = (
         select(HospitalStatus)
         .join(Hospital)
@@ -79,11 +80,11 @@ async def get_hospital_stats(db: AsyncSession = Depends(get_db)):
     status_result = await db.execute(latest_status_query)
     statuses = status_result.scalars().all()
     
-    # Calcolo statistiche
-    overcrowded = sum(1 for s in statuses if s.waiting_time > 120)  # più di 2 ore
+    # calculate statistics
+    overcrowded = sum(1 for s in statuses if s.waiting_time > 120)  # more than 2 hours
     avg_waiting = sum(s.waiting_time for s in statuses) / len(statuses) if statuses else 0
     
-    # Conteggio per colore
+    # count for color
     colors = {}
     for s in statuses:
         colors[s.color_code] = colors.get(s.color_code, 0) + 1
@@ -104,7 +105,7 @@ async def get_hospitals_detailed(
     """
     Recupera la lista degli ospedali con la distribuzione dettagliata dei codici colore.
     """
-    # Recupera gli ospedali con il loro stato corrente
+    # get hospitals with their current status
     query = (
         select(Hospital)
         .options(selectinload(Hospital.current_status))
@@ -115,35 +116,52 @@ async def get_hospitals_detailed(
     result = await db.execute(query)
     hospitals = result.scalars().all()
     
-    # Per ogni ospedale, recupera la distribuzione dei codici colore dal sito
+    # for each hospital, get the color distribution
     for hospital in hospitals:
         if hospital.current_status:
-            # Crea uno scraper per l'ospedale
-            scraper = ScraperFactory.create_scraper(
-                hospital_id=hospital.id,
-                config={}
-            )
-            
-            # Ottieni i dati grezzi dal sito
-            html = await scraper.get_page(scraper.BASE_URL)
-            soup = BeautifulSoup(html, 'html.parser')
-            
-            # Seleziona il container dell'ospedale
-            selector = scraper.hospital_selectors.get(scraper.hospital_code)
-            hospital_div = soup.select_one(selector)
-            
-            if hospital_div:
-                # Estrai i conteggi per ogni codice colore
-                distribution = ColorCodeDistribution(
-                    white=scraper._extract_number(hospital_div, ".olo-codice-grey .olo-number-codice"),
-                    green=scraper._extract_number(hospital_div, ".olo-codice-green .olo-number-codice"),
-                    blue=scraper._extract_number(hospital_div, ".olo-codice-azure .olo-number-codice"),
-                    orange=scraper._extract_number(hospital_div, ".olo-codice-orange .olo-number-codice"),
-                    red=scraper._extract_number(hospital_div, ".olo-codice-red .olo-number-codice")
+            try:
+                # create a scraper for the hospital
+                scraper = ScraperFactory.create_scraper(
+                    hospital_id=hospital.id,
+                    config={}
                 )
                 
-                # Aggiungi la distribuzione allo stato corrente
-                hospital.current_status.color_distribution = distribution
+                # try to get the color distribution directly from the scraper
+                try:
+                    distribution = await scraper.get_color_distribution()
+                    if distribution:
+                        hospital.current_status.color_distribution = distribution
+                        continue
+                except Exception as e:
+                    logging.debug(f"Impossibile ottenere la distribuzione colori direttamente: {str(e)}")
+                
+                # if the scraper has HTML selectors, use traditional HTML parsing
+                if hasattr(scraper, 'hospital_selectors'):
+                    # get raw data from the site
+                    html = await scraper.get_page(scraper.BASE_URL)
+                    soup = BeautifulSoup(html, 'html.parser')
+                    
+                    # select the hospital container
+                    selector = scraper.hospital_selectors.get(scraper.hospital_code)
+                    hospital_div = soup.select_one(selector)
+                    
+                    if hospital_div:
+                        # extract counts for each color code
+                        distribution = ColorCodeDistribution(
+                            white=scraper._extract_number(hospital_div, ".olo-codice-grey .olo-number-codice"),
+                            green=scraper._extract_number(hospital_div, ".olo-codice-green .olo-number-codice"),
+                            blue=scraper._extract_number(hospital_div, ".olo-codice-azure .olo-number-codice"),
+                            orange=scraper._extract_number(hospital_div, ".olo-codice-orange .olo-number-codice"),
+                            red=scraper._extract_number(hospital_div, ".olo-codice-red .olo-number-codice")
+                        )
+                        
+                        # add the distribution to the current status
+                        hospital.current_status.color_distribution = distribution
+                
+            except Exception as e:
+                # log the error but continue with the next hospital
+                logging.error(f"Errore nel recupero della distribuzione colori per l'ospedale {hospital.id}: {str(e)}")
+                continue
     
     return hospitals
 
@@ -158,8 +176,8 @@ async def get_nearby_hospitals(
     Trova gli ospedali nel raggio specificato dalle coordinate date.
     Utilizza la formula di Haversine per il calcolo della distanza.
     """
-    # Conversione del raggio in gradi (approssimazione)
-    radius_degrees = radius / 111.0  # 1 grado ≈ 111 km
+    # conversion of radius to degrees (approximation)
+    radius_degrees = radius / 111.0  # 1 degree ≈ 111 km
     
     query = select(Hospital).filter(
         func.sqrt(
@@ -177,7 +195,7 @@ async def get_hospital(hospital_id: int, db: AsyncSession = Depends(get_db)):
     """
     Recupera i dettagli di un singolo ospedale con il suo stato attuale.
     """
-    # Carica l'ospedale e il suo stato corrente in una singola query
+    # load the hospital and its current status in a single query
     query = (
         select(Hospital)
         .options(selectinload(Hospital.current_status))
@@ -220,7 +238,7 @@ async def get_hospital_detailed(hospital_id: int, db: AsyncSession = Depends(get
     """
     Recupera i dettagli di un singolo ospedale con la distribuzione dettagliata dei codici colore.
     """
-    # Carica l'ospedale e il suo stato corrente
+    # load the hospital and its current status
     query = (
         select(Hospital)
         .options(selectinload(Hospital.current_status))
@@ -233,31 +251,51 @@ async def get_hospital_detailed(hospital_id: int, db: AsyncSession = Depends(get
         raise HTTPException(status_code=404, detail="Ospedale non trovato")
         
     if hospital.current_status:
-        # Crea uno scraper per l'ospedale
-        scraper = ScraperFactory.create_scraper(
-            hospital_id=hospital.id,
-            config={}
-        )
-        
-        # Ottieni i dati grezzi dal sito
-        html = await scraper.get_page(scraper.BASE_URL)
-        soup = BeautifulSoup(html, 'html.parser')
-        
-        # Seleziona il container dell'ospedale
-        selector = scraper.hospital_selectors.get(scraper.hospital_code)
-        hospital_div = soup.select_one(selector)
-        
-        if hospital_div:
-            # Estrai i conteggi per ogni codice colore
-            distribution = ColorCodeDistribution(
-                white=scraper._extract_number(hospital_div, ".olo-codice-grey .olo-number-codice"),
-                green=scraper._extract_number(hospital_div, ".olo-codice-green .olo-number-codice"),
-                blue=scraper._extract_number(hospital_div, ".olo-codice-azure .olo-number-codice"),
-                orange=scraper._extract_number(hospital_div, ".olo-codice-orange .olo-number-codice"),
-                red=scraper._extract_number(hospital_div, ".olo-codice-red .olo-number-codice")
-            )
-            
-            # Aggiungi la distribuzione allo stato corrente
-            hospital.current_status.color_distribution = distribution
+        # for each hospital, get the color distribution
+        for hospital in [hospital]:
+            if hospital.current_status:
+                try:
+                    # create a scraper for the hospital
+                    scraper = ScraperFactory.create_scraper(
+                        hospital_id=hospital.id,
+                        config={}
+                    )
+                    
+                    # try to get the color distribution directly from the scraper
+                    try:
+                        distribution = await scraper.get_color_distribution()
+                        if distribution:
+                            hospital.current_status.color_distribution = distribution
+                            continue
+                    except Exception as e:
+                        logging.debug(f"Impossibile ottenere la distribuzione colori direttamente: {str(e)}")
+                    
+                    # if the scraper has HTML selectors, use traditional HTML parsing
+                    if hasattr(scraper, 'hospital_selectors'):
+                        # get raw data from the site
+                        html = await scraper.get_page(scraper.BASE_URL)
+                        soup = BeautifulSoup(html, 'html.parser')
+                        
+                        # select the hospital container
+                        selector = scraper.hospital_selectors.get(scraper.hospital_code)
+                        hospital_div = soup.select_one(selector)
+                        
+                        if hospital_div:
+                            # extract counts for each color code
+                            distribution = ColorCodeDistribution(
+                                white=scraper._extract_number(hospital_div, ".olo-codice-grey .olo-number-codice"),
+                                green=scraper._extract_number(hospital_div, ".olo-codice-green .olo-number-codice"),
+                                blue=scraper._extract_number(hospital_div, ".olo-codice-azure .olo-number-codice"),
+                                orange=scraper._extract_number(hospital_div, ".olo-codice-orange .olo-number-codice"),
+                                red=scraper._extract_number(hospital_div, ".olo-codice-red .olo-number-codice")
+                            )
+                            
+                            # add the distribution to the current status
+                            hospital.current_status.color_distribution = distribution
+                    
+                except Exception as e:
+                    # log the error but continue with the next hospital
+                    logging.error(f"Errore nel recupero della distribuzione colori per l'ospedale {hospital.id}: {str(e)}")
+                    continue
     
     return hospital 
