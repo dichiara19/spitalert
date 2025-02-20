@@ -9,6 +9,7 @@ from ..database import get_db
 from .. import models, schemas
 from ..services.scraper_service import ScraperService
 from ..scrapers.factory import ScraperFactory
+from ..utils.rate_limiter import check_rate_limit
 
 router = APIRouter()
 
@@ -17,7 +18,6 @@ async def scrape_hospital_data(hospital_id: int) -> dict:
     Funzione di esempio per lo scraping dei dati di un ospedale.
     In produzione, questa funzione dovrà essere implementata per ogni ospedale specifico.
     """
-    # Simulazione di una richiesta HTTP
     await asyncio.sleep(1)  # Simula il tempo di risposta
     return {
         "hospital_id": hospital_id,
@@ -50,7 +50,10 @@ async def update_hospital_data(db: AsyncSession, hospital_id: int):
     await db.commit()
 
 @router.post("/run", response_model=Dict[str, bool])
-async def run_scrapers(db: AsyncSession = Depends(get_db)):
+async def run_scrapers(
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(check_rate_limit)
+):
     """
     Esegue lo scraping per tutti gli ospedali registrati.
     
@@ -64,7 +67,8 @@ async def run_scrapers(db: AsyncSession = Depends(get_db)):
 @router.post("/run/{hospital_id}", response_model=bool)
 async def run_hospital_scraper(
     hospital_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(check_rate_limit)
 ):
     """
     Esegue lo scraping per un singolo ospedale.

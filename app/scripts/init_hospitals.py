@@ -162,7 +162,108 @@ HOSPITALS_DATA: Dict[HospitalCode, Dict[str, Any]] = {
         "address": "Via dei Benedettini, 1",
         "latitude": 38.109722,
         "longitude": 13.361944
-    }
+    },
+    HospitalCode.PO_RODOLICO: {
+        "name": "P.O. G. Rodolico",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Catania",
+        "province": "CT",
+        "address": "Via Santa Sofia, 78",
+        "latitude": 37.536111,
+        "longitude": 15.066944
+    },
+    HospitalCode.PO_SAN_MARCO: {
+        "name": "P.O. San Marco",
+        "department": "Pronto Soccorso Adulti",
+        "city": "Catania",
+        "province": "CT",
+        "address": "Viale Carlo Azeglio Ciampi",
+        "latitude": 37.528889,
+        "longitude": 15.087778
+    },
+    # ASP Messina - Solo Policlinico e Papardo attivi
+    HospitalCode.AO_PAPARDO: {
+        "name": "A.O. Papardo",
+        "department": "Pronto Soccorso",
+        "city": "Messina",
+        "province": "ME",
+        "address": "Contrada Papardo",
+        "latitude": 38.265833,
+        "longitude": 15.601944
+    },
+    HospitalCode.POLICLINICO_MESSINA: {
+        "name": "A.O.U. Policlinico G. Martino",
+        "department": "Pronto Soccorso Generale",
+        "city": "Messina",
+        "province": "ME",
+        "address": "Via Consolare Valeria, 1",
+        "latitude": 38.2547,
+        "longitude": 15.5477
+    },
+    # Altri ospedali ASP Messina temporaneamente commentati
+    # HospitalCode.PS_MILAZZO: {
+    #     "name": "P.O. G. Fogliani",
+    #     "department": "Pronto Soccorso",
+    #     "city": "Milazzo",
+    #     "province": "ME",
+    #     "address": "Contrada Grazia",
+    #     "latitude": 38.2224,
+    #     "longitude": 15.2422
+    # },
+    # HospitalCode.PS_LIPARI: {
+    #     "name": "P.O. di Lipari",
+    #     "department": "Pronto Soccorso",
+    #     "city": "Lipari",
+    #     "province": "ME",
+    #     "address": "Via Ospedale",
+    #     "latitude": 38.4667,
+    #     "longitude": 14.9569
+    # },
+    # HospitalCode.PS_BARCELLONA: {
+    #     "name": "P.O. di Barcellona P.G.",
+    #     "department": "Pronto Soccorso",
+    #     "city": "Barcellona Pozzo di Gotto",
+    #     "province": "ME",
+    #     "address": "Via Vittorio Emanuele II",
+    #     "latitude": 38.1436,
+    #     "longitude": 15.2139
+    # },
+    # HospitalCode.PS_PATTI: {
+    #     "name": "P.O. Barone Romeo",
+    #     "department": "Pronto Soccorso",
+    #     "city": "Patti",
+    #     "province": "ME",
+    #     "address": "Contrada Belvedere",
+    #     "latitude": 38.1397,
+    #     "longitude": 14.9697
+    # },
+    # HospitalCode.PS_SANTANGELO: {
+    #     "name": "P.O. di Sant'Agata di Militello",
+    #     "department": "Pronto Soccorso",
+    #     "city": "Sant'Agata di Militello",
+    #     "province": "ME",
+    #     "address": "Via Medici",
+    #     "latitude": 38.0731,
+    #     "longitude": 14.6303
+    # },
+    # HospitalCode.PS_MISTRETTA: {
+    #     "name": "P.O. SS. Salvatore",
+    #     "department": "Pronto Soccorso",
+    #     "city": "Mistretta",
+    #     "province": "ME",
+    #     "address": "Via Salamone",
+    #     "latitude": 37.9297,
+    #     "longitude": 14.3636
+    # },
+    # HospitalCode.PS_TAORMINA: {
+    #     "name": "P.O. San Vincenzo",
+    #     "department": "Pronto Soccorso",
+    #     "city": "Taormina",
+    #     "province": "ME",
+    #     "address": "Contrada Sirina",
+    #     "latitude": 37.8525,
+    #     "longitude": 15.2867
+    # }
 }
 
 async def get_existing_hospitals(db: AsyncSession) -> Dict[str, Hospital]:

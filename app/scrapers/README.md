@@ -124,6 +124,7 @@ class APIBasedScraper(BaseHospitalScraper):
 ### 1. Scegliere il Tipo di Scraper
 
 Prima di implementare, determinare se l'ospedale espone:
+
 - Pagina web HTML → Usare scraping HTML
 - API REST → Usare chiamate API dirette
 
@@ -359,3 +360,106 @@ Ogni scraper dovrebbe includere test per:
 3. Gestione degli errori HTTP
 4. Validazione dei dati
 5. Casi limite e formati inaspettati
+
+## Verifica degli Scraper
+
+Prima di considerare completo uno scraper, verificare che:
+
+1. **Distribuzione dei Colori**
+   - Il metodo `get_color_distribution()` sia implementato
+   - Il metodo `ensure_color_distribution()` sia presente per gestire casi di errore
+   - La distribuzione dei colori sia correttamente mappata allo schema SpitAlert
+
+2. **Gestione degli Errori**
+   - Tutti i metodi che fanno chiamate esterne usino try/catch
+   - Gli errori siano loggati con il livello appropriato
+   - In caso di errore, venga restituito un valore di fallback valido
+
+3. **Validazione dei Dati**
+   - Il metodo `validate_data()` controlli tutti i campi obbligatori
+   - I conteggi dei pazienti siano numeri non negativi
+   - Le date di aggiornamento siano valide
+
+4. **Conformità allo Schema**
+   - Tutti i campi richiesti da `HospitalStatusCreate` siano presenti
+   - I tipi di dati siano corretti (es. `color_distribution` sia di tipo `ColorCodeDistribution`)
+   - I valori di default siano gestiti appropriatamente
+
+## Analisi Preliminare delle API
+
+Prima di implementare uno scraper HTML, è consigliabile verificare se l'ospedale espone delle API. Ecco alcuni comandi utili:
+
+### 1. Analisi delle Richieste XHR
+
+```bash
+# Monitora tutte le richieste XHR durante la navigazione
+curl -H "X-Requested-With: XMLHttpRequest" "https://ospedale.example.com/pronto-soccorso"
+
+# Prova diversi header comuni
+curl -H "Accept: application/json" "https://ospedale.example.com/api/status"
+curl -H "Content-Type: application/json" "https://ospedale.example.com/api/ps"
+```
+
+### 2. Endpoint Comuni
+
+```bash
+# Prova pattern comuni di endpoint
+curl "https://ospedale.example.com/api/v1/pronto-soccorso"
+curl "https://ospedale.example.com/api/ps/status"
+curl "https://ospedale.example.com/api/waiting-times"
+curl "https://ospedale.example.com/api/emergency/data"
+```
+
+### 3. Analisi dei WebSocket
+
+```bash
+# Se il sito usa WebSocket per aggiornamenti in tempo reale
+wscat -c "wss://ospedale.example.com/ws/ps-status"
+```
+
+### 4. Verifica GraphQL
+
+```bash
+# Se il sito usa GraphQL
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"query": "{ prontoSoccorso { waitingTimes } }"}' \
+  "https://ospedale.example.com/graphql"
+```
+
+### 5. Monitoraggio del Network
+
+- Usa gli strumenti di sviluppo del browser (Network tab)
+- Filtra per XHR/Fetch
+- Cerca pattern nelle richieste periodiche
+- Analizza i payload delle risposte
+
+### 6. Headers Comuni da Provare
+
+```bash
+# User-Agent comuni
+curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+  "https://ospedale.example.com/api/status"
+
+# Referrer
+curl -H "Referer: https://ospedale.example.com/" \
+  "https://ospedale.example.com/api/data"
+
+# Origin
+curl -H "Origin: https://ospedale.example.com" \
+  "https://ospedale.example.com/api/ps"
+```
+
+### 7. Rate Limiting e Caching
+
+```bash
+# Verifica la presenza di rate limiting
+for i in {1..10}; do
+  curl -I "https://ospedale.example.com/api/status"
+  sleep 1
+done
+
+# Verifica le policy di cache
+curl -I "https://ospedale.example.com/api/status"
+```
+
+Se non vengono trovate API utilizzabili, procedere con l'implementazione dello scraper HTML seguendo le best practices descritte sopra.
