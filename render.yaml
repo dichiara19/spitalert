@@ -12,7 +12,7 @@ services:
       - key: DEBUG
         value: false
       - key: CORS_ORIGINS
-        value: '["https://spitalert.com"]'
+        value: '["https://api.spitalert.com"]'
       - key: POSTGRES_USER
         sync: false  # Chiedi a Render di gestire questo valore
       - key: POSTGRES_PASSWORD
@@ -25,9 +25,9 @@ services:
       - key: POSTGRES_DB
         value: spitalert
     
-  # Database Service
-  - type: postgres
-    name: spitalert-db
-    region: frankfurt
-    plan: starter
-    ipAllowList: []  # Accesso solo dai servizi Render 
+  # # Database Service
+  # - type: postgres
+  #   name: spitalert-db
+  #   region: frankfurt
+  #   plan: starter
+  #   ipAllowList: []  # Accesso solo dai servizi Render 
