@@ -5,74 +5,75 @@ Registra tutti gli scraper disponibili nel factory.
 
 from .factory import ScraperFactory
 from .hospital_codes import HospitalCode, HospitalRegistry
-from .ospedali_riuniti_palermo import (
-    POCervelloAdultiScraper,
-    POVillaSofiaAdultiScraper,
-    POCervelloPediatricoScraper
-)
+
+# Import degli scraper
+from .ospedali_riuniti_palermo import POCervelloAdultiScraper, POCervelloPediatricoScraper, POVillaSofiaAdultiScraper
 from .policlinico_palermo import PoliclinicoPalermoScraper
-from .asp_agrigento import (
-    PsSciacca,
-    PsRibera,
-    PsAgrigento,
-    PsCanicatti,
-    PsLicata
-)
+from .asp_agrigento import PsSciacca, PsRibera, PsLicata, PsCanicatti, PsAgrigento
 from .asp_caltanissetta import PsSantEliaScraper
 from .asp_palermo import (
+    PsIngrassiaScraper, PsPartinicoScraper, PsCorleoneScraper, 
+    PsPetraliaScraper, PsTerminiScraper
+)
+from .arnas_civico import PoCivicoAdultiScraper, PoCivicoPediatricoScraper
+from .policlinico_catania import PoRodolicoScraper, PoSanMarcoScraper
+# ASP Messina - Solo Policlinico e Papardo attivi
+from .ao_papardo import AoPapardoScraper
+from .policlinico_messina import PoliclinicoMessinaScraper
+
+# Registrazione dei mapping ID-codice degli ospedali
+hospital_mappings = [
+    (1, HospitalCode.PO_CERVELLO_ADULTI),
+    (2, HospitalCode.PO_VILLA_SOFIA_ADULTI),
+    (3, HospitalCode.PO_CERVELLO_PEDIATRICO),
+    (4, HospitalCode.POLICLINICO_PALERMO),
+    (5, HospitalCode.PS_SCIACCA),
+    (6, HospitalCode.PS_RIBERA),
+    (7, HospitalCode.PS_AGRIGENTO),
+    (8, HospitalCode.PS_CANICATTI),
+    (9, HospitalCode.PS_LICATA),
+    (10, HospitalCode.PS_SANTELIA),
+    (11, HospitalCode.PS_INGRASSIA),
+    (12, HospitalCode.PS_PARTINICO),
+    (13, HospitalCode.PS_CORLEONE),
+    (14, HospitalCode.PS_PETRALIA),
+    (15, HospitalCode.PS_TERMINI),
+    (16, HospitalCode.PO_CIVICO_ADULTI),
+    (17, HospitalCode.PO_CIVICO_PEDIATRICO),
+    (18, HospitalCode.PO_RODOLICO),
+    (19, HospitalCode.PO_SAN_MARCO),
+    # ASP Messina - Solo Policlinico e Papardo attivi
+    (20, HospitalCode.AO_PAPARDO),
+    (21, HospitalCode.POLICLINICO_MESSINA)
+]
+
+for hosp_id, hosp_code in hospital_mappings:
+    HospitalRegistry.register(hosp_id, hosp_code)
+
+# Registrazione degli scraper nella factory
+scrapers = [
+    POCervelloAdultiScraper,
+    POCervelloPediatricoScraper,
+    POVillaSofiaAdultiScraper,
+    PoliclinicoPalermoScraper,
+    PsSciacca,
+    PsRibera,
+    PsLicata,
+    PsCanicatti,
+    PsAgrigento,
+    PsSantEliaScraper,
     PsIngrassiaScraper,
     PsPartinicoScraper,
     PsCorleoneScraper,
     PsPetraliaScraper,
-    PsTerminiScraper
-)
-from .arnas_civico import (
+    PsTerminiScraper,
     PoCivicoAdultiScraper,
-    PoCivicoPediatricoScraper
-)
+    PoCivicoPediatricoScraper,
+    PoRodolicoScraper,
+    PoSanMarcoScraper,
+    AoPapardoScraper,
+    PoliclinicoMessinaScraper
+]
 
-# Registra i mapping ID-codice nel registry
-HospitalRegistry.register(1, HospitalCode.PO_CERVELLO_ADULTI)
-HospitalRegistry.register(2, HospitalCode.PO_VILLA_SOFIA_ADULTI)
-HospitalRegistry.register(3, HospitalCode.PO_CERVELLO_PEDIATRICO)
-HospitalRegistry.register(4, HospitalCode.POLICLINICO_PALERMO)
-HospitalRegistry.register(5, HospitalCode.PS_SCIACCA)
-HospitalRegistry.register(6, HospitalCode.PS_RIBERA)
-HospitalRegistry.register(7, HospitalCode.PS_AGRIGENTO)
-HospitalRegistry.register(8, HospitalCode.PS_CANICATTI)
-HospitalRegistry.register(9, HospitalCode.PS_LICATA)
-HospitalRegistry.register(10, HospitalCode.PS_SANTELIA)
-HospitalRegistry.register(11, HospitalCode.PS_INGRASSIA)
-HospitalRegistry.register(12, HospitalCode.PS_PARTINICO)
-HospitalRegistry.register(13, HospitalCode.PS_CORLEONE)
-HospitalRegistry.register(14, HospitalCode.PS_PETRALIA)
-HospitalRegistry.register(15, HospitalCode.PS_TERMINI)
-HospitalRegistry.register(16, HospitalCode.PO_CIVICO_ADULTI)
-HospitalRegistry.register(17, HospitalCode.PO_CIVICO_PEDIATRICO)
-
-# Registra gli scraper
-ScraperFactory.register_scraper(POCervelloAdultiScraper)
-ScraperFactory.register_scraper(POVillaSofiaAdultiScraper)
-ScraperFactory.register_scraper(POCervelloPediatricoScraper)
-ScraperFactory.register_scraper(PoliclinicoPalermoScraper)
-
-# Registra gli scraper dell'ASP di Agrigento
-ScraperFactory.register_scraper(PsSciacca)
-ScraperFactory.register_scraper(PsRibera)
-ScraperFactory.register_scraper(PsAgrigento)
-ScraperFactory.register_scraper(PsCanicatti)
-ScraperFactory.register_scraper(PsLicata)
-
-# Registra lo scraper dell'ASP di Caltanissetta
-ScraperFactory.register_scraper(PsSantEliaScraper)
-
-# Registra gli scraper dell'ASP di Palermo
-ScraperFactory.register_scraper(PsIngrassiaScraper)
-ScraperFactory.register_scraper(PsPartinicoScraper)
-ScraperFactory.register_scraper(PsCorleoneScraper)
-ScraperFactory.register_scraper(PsPetraliaScraper)
-ScraperFactory.register_scraper(PsTerminiScraper)
-
-# Registra gli scraper dell'ARNAS Civico
-ScraperFactory.register_scraper(PoCivicoAdultiScraper)
-ScraperFactory.register_scraper(PoCivicoPediatricoScraper) 
+for scraper in scrapers:
+    ScraperFactory.register_scraper(scraper) 
