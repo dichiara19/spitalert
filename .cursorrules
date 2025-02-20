@@ -1,0 +1,306 @@
+### Developing a Scalable FastAPI Scraper with PostgreSQL for SpitAlert**
+
+#### **Objective**
+You are an expert in **Python, FastAPI, and scalable API development**. Your task is to design and implement a **FastAPI scraper** that stores and serves hospital emergency data for SpitAlert. The application must function in both **local and cloud production environments**, utilizing **PostgreSQL** as the database.
+
+The scraper must:
+
+1. **Fetch real-time hospital data** and store it in a **live data table**.
+2. **Archive each scraping session** into a **historical table** for trend analysis.
+3. **Store static hospital information** (e.g., name, address, coordinates) in a **separate reference table**, managed via a JSON file.
+4. **Support local and production environments**, configurable via an `.env` file.
+5. **Expose an API endpoint** for retrieving stored data in real-time.
+6. Be deployable on **Render (for testing)** and **api.spitalert.com (for production)**.
+7. **Handle multiple hospital data sources**:
+   - Some hospital data may be **aggregated in a single URL**.
+   - Others may come from **individual API endpoints** or **HTML-based scraping**.
+8. **Store** the additional detail of **scrape date** and **last known update date** (from the external source) for each hospital.
+9. **Maintain a consistent data model** even if some hospitals use **different color coding** than others.
+
+---
+
+### **Color Coding**
+
+Although traditional triage codes in some hospital systems are White, Green, Yellow, and Red, SpitAlert uses:
+
+- **White** – Non-urgency
+- **Green** – Minor urgency
+- **Blue** – Deferrable urgency (stable condition requiring more complex diagnostics)
+- **Orange** – Urgency (risk of compromised vital functions or severe pain)
+- **Red** – Emergency (life-threatening or compromised vital functions)
+
+Some hospitals may still report using older or different color names. Ensure the system accommodates these variations.
+
+---
+
+### **Development Guidelines**
+
+#### **General Coding Principles**
+
+- Write **concise, maintainable code** with clear, functional structure.
+- Prefer **functions over classes**, unless object-oriented design is strictly necessary.
+- Use **modular code** with reusable components to avoid duplication.
+- Use **descriptive variable names** with auxiliary verbs (`is_active`, `has_data`).
+- Follow the **Receive an Object, Return an Object (RORO) pattern** for functions.
+- Use **lowercase with underscores** for filenames and directories (e.g., `routers/scraper.py`).
+- Use **named exports** for routes and utility functions.
+
+---
+
+### **FastAPI Implementation**
+
+#### **File Structure**
+
+```
+speedalert_backend/
+│── app/
+│   ├── main.py           # FastAPI entry point
+│   ├── config.py         # Environment settings
+│   ├── database.py       # PostgreSQL connection and session management
+│   ├── models.py         # SQLAlchemy data models
+│   ├── schemas.py        # Pydantic schemas
+│   ├── scraper.py        # Scraper implementation
+│   ├── routers/
+│   │   ├── api.py        # API endpoints
+│   │   ├── hospitals.py  # Hospital-related endpoints
+│   ├── utils/
+│   │   ├── helpers.py    # Utility functions
+│   ├── tests/            # Unit tests
+│   ├── .env              # Environment variables
+│   ├── requirements.txt  # Dependencies
+│   ├── Dockerfile        # Deployment configuration
+```
+
+---
+
+### **Database Schema (PostgreSQL)**
+
+#### **Hospitals Table (`hospitals`)**
+
+Holds static hospital information, potentially loaded from a JSON file.
+
+```sql
+CREATE TABLE hospitals (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    city TEXT NOT NULL,
+    province TEXT NOT NULL,
+    address TEXT NOT NULL,
+    latitude DECIMAL NOT NULL,
+    longitude DECIMAL NOT NULL
+);
+```
+
+#### **Live Data Table (`hospital_status`)**
+
+Stores the latest scraped data.
+
+```sql
+CREATE TABLE hospital_status (
+    id SERIAL PRIMARY KEY,
+    hospital_id INT REFERENCES hospitals(id),
+    available_beds INT NOT NULL,
+    waiting_time INT NOT NULL,
+    color_code TEXT NOT NULL, -- e.g., White, Green, Blue, Orange, Red
+    last_updated TIMESTAMP DEFAULT NOW(),
+    external_last_update TIMESTAMP -- if provided by external source
+);
+```
+
+#### **Historical Data Table (`hospital_history`)**
+
+Stores all past scraping sessions for analytics.
+
+```sql
+CREATE TABLE hospital_history (
+    id SERIAL PRIMARY KEY,
+    hospital_id INT REFERENCES hospitals(id),
+    available_beds INT NOT NULL,
+    waiting_time INT NOT NULL,
+    color_code TEXT NOT NULL,
+    scraped_at TIMESTAMP DEFAULT NOW(),
+    external_last_update TIMESTAMP
+);
+```
+
+---
+
+### **API Endpoints**
+
+1. **Health Check**
+   - **Method**: `GET /`
+   - **Action**: Basic health check to confirm the API is running.
+   - **Response**: `{"status": "ok"}`
+
+2. **List Hospitals**
+   - **Method**: `GET /hospitals/`
+   - **Action**: Retrieves the list of hospitals and their current status.
+   - **Response**: JSON array of hospital objects.
+
+3. **Get Hospital**
+   - **Method**: `GET /hospitals/{hospital_id}`
+   - **Action**: Retrieves details for a single hospital.
+   - **Response**: Hospital object with current status.
+
+4. **Get Hospitals by Department**
+   - **Method**: `GET /hospitals/department/{department}`
+   - **Action**: Returns a filtered list of hospitals matching the specified department.
+   - **Response**: JSON array of hospital objects.
+
+5. **Overcrowded Hospitals**
+   - **Method**: `GET /hospitals/stats/overcrowded`
+   - **Action**: Shows a list of hospitals deemed overcrowded based on real-time data.
+   - **Response**: JSON array of hospital objects.
+
+6. **Hospital Config**
+   - **Method**: `GET /hospitals/config/`
+   - **Action**: Retrieves static config data (address, city, province, coordinates, etc.).
+   - **Response**: JSON array of hospitals with static info.
+
+7. **Search Hospitals**
+   - **Method**: `GET /hospitals/search/`
+   - **Action**: Allows keyword-based searching.
+   - **Response**: JSON array of matching hospital objects.
+
+8. **Nearby Hospitals**
+   - **Method**: `GET /hospitals/nearby/`
+   - **Action**: Returns hospitals near a given coordinate.
+   - **Response**: JSON array of the nearest hospitals.
+
+9. **Scraper Trigger**
+   - **Method**: `POST /scrape`
+   - **Action**: Triggers the scraping process (HTML or API calls) and updates both live and historical tables.
+   - **Response**: `{ "message": "Scraping completed", "new_records": <count> }`
+
+---
+
+### **Core Code Implementation**
+
+#### **FastAPI Entry Point (`main.py`)**
+
+```python
+from fastapi import FastAPI
+from app.routers import api
+from app.database import init_db
+
+app = FastAPI(title="SpitAlert API", version="1.0")
+
+@app.on_event("startup")
+async def startup():
+    await init_db()
+
+app.include_router(api.router, prefix="/api")
+```
+
+#### **Database Connection (`database.py`)**
+
+```python
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+from app.config import DATABASE_URL
+
+engine = create_async_engine(DATABASE_URL, echo=True)
+SessionLocal = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+
+async def get_db():
+    async with SessionLocal() as session:
+        yield session
+```
+
+#### **Scraper Logic (`scraper.py`)**
+
+```python
+import httpx
+from datetime import datetime
+from app.database import SessionLocal
+from app.models import HospitalStatus, HospitalHistory
+
+async def scrape_data():
+    # Some hospitals might be aggregated, others separate.
+    # For HTML scraping, parse the response accordingly.
+    # For REST endpoints, make requests similarly.
+
+    url = "https://source-of-hospital-data.com/api"
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        data = response.json()
+
+    async with SessionLocal() as session:
+        for hospital in data:
+            # Insert into live data
+            entry = HospitalStatus(
+                hospital_id=hospital["id"],
+                available_beds=hospital["available_beds"],
+                waiting_time=hospital["waiting_time"],
+                color_code=hospital.get("color_code", "unknown"),
+                last_updated=datetime.utcnow(),
+                external_last_update=hospital.get("external_last_update")
+            )
+            session.add(entry)
+
+            # Insert into history
+            history_entry = HospitalHistory(
+                hospital_id=hospital["id"],
+                available_beds=hospital["available_beds"],
+                waiting_time=hospital["waiting_time"],
+                color_code=hospital.get("color_code", "unknown"),
+                scraped_at=datetime.utcnow(),
+                external_last_update=hospital.get("external_last_update")
+            )
+            session.add(history_entry)
+
+        await session.commit()
+```
+
+#### **Environment Configuration (`config.py`)**
+
+```python
+from pydantic import BaseSettings
+
+class Settings(BaseSettings):
+    DATABASE_URL: str = "postgresql+asyncpg://user:password@localhost/speedalert"
+    PRODUCTION_API_URL: str = "https://api.spitalert.com"
+
+    class Config:
+        env_file = ".env"
+
+settings = Settings()
+```
+
+---
+
+### **Deployment Strategy**
+
+#### **Local Development**
+
+```bash
+uvicorn app.main:app --reload
+```
+
+#### **Production Deployment (Render)**
+
+- Use Docker
+- Set up PostgreSQL
+- Deploy with FastAPI and Gunicorn
+
+---
+
+### **Performance Optimization**
+
+- Use **asyncpg** for fast, non-blocking database queries.
+- Implement **Redis caching** for frequently accessed static data.
+- Optimize **data serialization** with Pydantic models.
+- Apply **lazy loading** for large datasets.
+
+---
+
+### **Final Notes**
+
+- The scraper **runs asynchronously** and stores both live and historical data.
+- The `.env` file ensures **smooth transition between local and production**.
+- PostgreSQL manages **efficient data retrieval and storage**.
+- The **API structure** follows FastAPI best practices for scalability.
+- Some hospitals are **fetched from a single aggregator** while others require **HTML parsing** or direct **endpoint** requests.
+- Each scrape includes **date of scraping** and **external last update** to maintain data accuracy.
+
+This setup ensures a **robust, maintainable, and scalable scraper backend**, ready for production deployment.
