@@ -19,8 +19,9 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # Database PostgreSQL
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
+    DATABASE_URL: Optional[str] = None
+    POSTGRES_USER: Optional[str] = None
+    POSTGRES_PASSWORD: Optional[str] = None
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_PORT: str = "5432"
     POSTGRES_DB: str = "spitalert"
@@ -31,7 +32,13 @@ class Settings(BaseSettings):
     POSTGRES_POOL_TIMEOUT: int = 30  # secondi
     
     @property
-    def DATABASE_URL(self) -> str:
+    def get_database_url(self) -> str:
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        
+        if not self.POSTGRES_USER or not self.POSTGRES_PASSWORD:
+            raise ValueError("DATABASE_URL o (POSTGRES_USER e POSTGRES_PASSWORD) devono essere configurati")
+            
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
