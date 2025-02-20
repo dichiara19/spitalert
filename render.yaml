@@ -24,6 +24,8 @@ services:
           property: host
       - key: POSTGRES_DB
         value: spitalert
+      - key: REDIS_URL
+        value: "redis://red-curpt2rqf0us73cvr4i0:6379"
     
   # # Database Service
   # - type: postgres
